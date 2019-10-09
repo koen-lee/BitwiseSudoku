@@ -8,35 +8,41 @@ namespace SudokuHelper
     {
         private readonly SudokuSet[] _sets;
 
-        private ulong _mask;
+        public ulong PossibleMask { get; private set; }
+
         public int Value
         {
-            get => _mask == 0 ? 0 : BitOperations.TrailingZeroCount(_mask) + 1;
+            get => PossibleMask == 0 ? 0 : BitOperations.TrailingZeroCount(PossibleMask) + 1;
             set
             {
                 if (value == 0)
                 {
-                    if (_mask == 0)
+                    if (PossibleMask == 0)
                         return;
                     throw new InvalidOperationException();
                 }
 
                 var mask = 1ul << (value - 1);
-                foreach (var set in _sets)
-                {
-                    if (!set.TryRemovePossibility(mask))
-                        throw new InvalidOperationException("Set already has a " + value);
-                }
-                _mask = mask;
+                SetMask(mask);
             }
         }
 
-        public bool HasValue { get => _mask != 0; }
+        public void SetMask(ulong mask)
+        {
+            foreach (var set in _sets)
+            {
+                if (!set.TryRemovePossibility(mask))
+                    throw new InvalidOperationException("Set already has mask " + mask);
+            }
+            PossibleMask = mask;
+        }
+
+        public bool HasValue { get => BitOperations.PopCount(PossibleMask) == 1; }
 
         public Field(params SudokuSet[] sets)
         {
             _sets = sets;
-            foreach( var set in sets)
+            foreach (var set in sets)
             {
                 set.Add(this);
             }
@@ -44,17 +50,17 @@ namespace SudokuHelper
 
         public ValueResult TrySetValue()
         {
-            if (Value > 0) return ValueResult.Solved;
+            if (HasValue) return ValueResult.Solved;
             var possibilities = _sets[0].PossibleFlags & _sets[1].PossibleFlags & _sets[2].PossibleFlags;
             if (possibilities == 0)
                 return ValueResult.Impossible;
+            PossibleMask = possibilities;
             if (BitOperations.PopCount(possibilities) == 1)
             {
                 foreach (var set in _sets)
                 {
-                    set.TryRemovePossibility(possibilities);
+                    if (!set.TryRemovePossibility(possibilities)) throw new InvalidOperationException();
                 }
-                _mask = possibilities;
                 return ValueResult.Set;
             }
             return ValueResult.NotSet;
@@ -71,7 +77,6 @@ namespace SudokuHelper
                 mask <<= 1;
             }
         }
-
     }
 
     public enum ValueResult

@@ -8,7 +8,8 @@ namespace SudokuHelper
     {
         static void Main(string[] args)
         {
-            //Main4();
+            Main4();
+            Main9();
             Main9();
         }
 
@@ -38,7 +39,7 @@ namespace SudokuHelper
                 sudoku[i] = new Field(rows[row], cols[col], sqrs[(row / 3) + 3 * (col / 3)])
                 { Value = known[i] };
             }
-            var s = new Sudoku(sudoku);
+            var s = new Sudoku(sudoku, rows.Concat(cols).Concat(sqrs).ToArray());
             var sw = Stopwatch.StartNew();
             var result = s.Solve(out s);
 
@@ -67,7 +68,7 @@ namespace SudokuHelper
                 { Value = known[i] };
             }
 
-            var s = new Sudoku(sudoku);
+            var s = new Sudoku(sudoku, rows.Concat(cols).Concat(sqrs).ToArray());
             s.SolveSimple();
             s.Write();
         }

@@ -7,10 +7,12 @@ namespace SudokuHelper
     class Sudoku
     {
         private readonly Field[] sudoku;
+        private readonly SudokuSet[] sets;
 
-        public Sudoku(Field[] sudoku)
+        public Sudoku(Field[] sudoku, SudokuSet[] sets)
         {
             this.sudoku = sudoku;
+            this.sets = sets;
         }
 
         public void Write()
@@ -40,15 +42,39 @@ namespace SudokuHelper
             {
                 result = TrySetAField();
             }
-
             return result;
+        }
+
+        private ValueResult SolveUsingSets()
+        {
+            ValueResult result = ValueResult.Set;
+
+            while (result == ValueResult.Set)
+            {
+                var simpleResult = SolveSimple();
+                if (simpleResult == ValueResult.Impossible || simpleResult == ValueResult.Solved)
+                    return simpleResult;
+                result = TrySetAFieldForSet();
+            }
+            return result;
+        }
+
+        private ValueResult TrySetAFieldForSet()
+        {
+            foreach (var set in sets)
+            {
+                var result = set.TrySetValue();
+                if (result == ValueResult.Set)
+                    return result;
+            }
+            return ValueResult.NotSet;
         }
 
         public ValueResult Solve(out Sudoku solution)
         {
             solution = this;
 
-            var result = SolveSimple();
+            var result = SolveUsingSets();
             if (result == ValueResult.Solved)
                 return result;
             if (result == ValueResult.Impossible)
@@ -81,12 +107,12 @@ namespace SudokuHelper
                 int row = i / side;
                 int col = i % side;
                 newFields[i] = new Field(rows[row], cols[col], sqrs[(row / block) + block * (col / block)]);
-
-                newFields[i].Value = sudoku[i].Value;
+                if (sudoku[i].HasValue)
+                    newFields[i].Value = sudoku[i].Value;
                 if (sudoku[i] == field)
                     newFields[i].Value = value;
             }
-            return new Sudoku(newFields);
+            return new Sudoku(newFields, rows.Concat(cols).Concat(sqrs).ToArray());
         }
 
         private static SudokuSet[] GetSets(int count)
