@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 
 namespace SudokuHelper
 {
@@ -15,23 +16,25 @@ namespace SudokuHelper
             this.sets = sets;
         }
 
-        public void Write()
+        public override string ToString()
         {
+            var builder = new StringBuilder();
             var side = (int)Math.Sqrt(sudoku.Length);
             for (int i = 0; i < sudoku.Length; i++)
             {
                 int col = i % side;
                 if (col == 0)
-                    Console.WriteLine();
+                    builder.AppendLine();
                 if (sudoku[i].Value != 0)
                 {
-                    Console.Write(" " + sudoku[i].Value);
+                    builder.Append(" " + sudoku[i].Value);
                 }
                 else
                 {
-                    Console.Write("  ");
+                    builder.Append("  ");
                 }
             }
+            return builder.ToString();
         }
 
         public ValueResult SolveSimple()
@@ -56,7 +59,7 @@ namespace SudokuHelper
                     return simpleResult;
                 result = TrySetAFieldForSet();
             }
-            return result;
+            return SolveSimple();
         }
 
         private ValueResult TrySetAFieldForSet()
@@ -95,23 +98,43 @@ namespace SudokuHelper
         private Sudoku CloneAndSet(Field field, int value)
         {
             int length = sudoku.Length;
+            var clone = Create(length, out Field[] newFields);
+            for (int i = 0; i < length; i++)
+            {
+                if (sudoku[i].HasValue)
+                    newFields[i].Value = sudoku[i].Value;
+                if (sudoku[i] == field)
+                    newFields[i].Value = value;
+            }
+            return clone;
+        }
+
+        public static Sudoku Create(int[] fields)
+        {
+            var sudoku = Create(fields.Length, out var newFields);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                newFields[i].Value = fields[i];
+            }
+            return sudoku;
+        }
+
+        private static Sudoku Create(int length, out Field[] newFields)
+        {
             int side = (int)Math.Sqrt(length);
             int block = (int)Math.Sqrt(side);
             var rows = GetSets(side);
             var cols = GetSets(side);
             var sqrs = GetSets(side);
 
-            var newFields = new Field[length];
+            newFields = new Field[length];
             for (int i = 0; i < length; i++)
             {
                 int row = i / side;
                 int col = i % side;
                 newFields[i] = new Field(rows[row], cols[col], sqrs[(row / block) + block * (col / block)]);
-                if (sudoku[i].HasValue)
-                    newFields[i].Value = sudoku[i].Value;
-                if (sudoku[i] == field)
-                    newFields[i].Value = value;
             }
+
             return new Sudoku(newFields, rows.Concat(cols).Concat(sqrs).ToArray());
         }
 
