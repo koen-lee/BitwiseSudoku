@@ -26,21 +26,33 @@ namespace SudokuHelper
 
         public ValueResult TrySetValue()
         {
-            foreach (var field in _fields)
+            if (PossibleFlags == 0) return ValueResult.Solved;
+            ValueResult result;
+            do
             {
-                if (field.HasValue) continue;
-                if (field.TrySetValue() == ValueResult.Set) return ValueResult.Set;
-                var possible = field.PossibleMask;
-                foreach (var otherfield in _fields)
+                result = ValueResult.NotSet;
+                foreach (var field in _fields)
                 {
-                    if (field == otherfield) continue;
-                    if (otherfield.HasValue) continue;
-                    possible = possible & ~otherfield.PossibleMask;
+                    if (field.HasValue) continue;
+                    if (field.TrySetValue() == ValueResult.Set) return ValueResult.Set;
+                    var possible = field.PossibleMask;
+                    foreach (var otherfield in _fields)
+                    {
+                        if (field == otherfield) continue;
+                        if (otherfield.HasValue) continue;
+                        possible &= ~otherfield.PossibleMask;
+                    }
+                    if (BitOperations.PopCount(possible) == 1)
+                    {
+                        field.SetMask(possible);
+                        result = ValueResult.Set;
+                    }
                 }
-                if (BitOperations.PopCount(possible) == 1)
-                    field.SetMask(possible);
             }
-            return ValueResult.NotSet;
+            while (result == ValueResult.Set);
+
+            if (PossibleFlags == 0) return ValueResult.Solved;
+            return result;
         }
 
         internal void Add(Field field)
