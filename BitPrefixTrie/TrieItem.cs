@@ -38,20 +38,10 @@ namespace BitPrefixTrie
             False = @false;
         }
 
-        internal void AddItem(Bits prefix, T value)
+        internal void AddItem(Bits newPrefix, T value)
         {
-            if (prefix.Any())
-            {
-                if (prefix.First())
-                {
-                    AddToChild(ref True, prefix.Skip(1), value);
-                }
-                else
-                {
-                    AddToChild(ref False, prefix.Skip(1), value);
-                }
-            }
-            else
+            var common = newPrefix.Common(Prefix);
+            if (common.Count == newPrefix.Count)
             {
                 if (HasValue)
                     throw new ArgumentException("Duplicate key");
@@ -60,6 +50,14 @@ namespace BitPrefixTrie
                     HasValue = true;
                     Value = value;
                 }
+            }
+            else if (newPrefix.Skip(Prefix.Count).First())
+            {
+                AddToChild(ref True, newPrefix.Skip(Prefix.Count + 1), value);
+            }
+            else
+            {
+                AddToChild(ref False, newPrefix.Skip(Prefix.Count + 1), value);
             }
         }
 
@@ -81,7 +79,7 @@ namespace BitPrefixTrie
                     //split subtrie along the common prefix
                     var oldChild = child;
                     child = new TrieItem<T>(commonBits);
-                    child.AddItem(new Bits(enumerable.Skip(commonBits.Count)), value);
+                    child.AddItem(new Bits(enumerable), value);
                     child.MakeGrandchild(oldChild);
                 }
             }
