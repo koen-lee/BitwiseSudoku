@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BitPrefixTrie
 {
-    public struct Bits : IEnumerable<bool>
+    public readonly struct Bits : IEnumerable<bool>
     {
         internal static readonly Bits Empty = new Bits(new Byte[0]);
         private readonly byte[] _fullBytes;
@@ -26,7 +27,7 @@ namespace BitPrefixTrie
             foreach (var bit in bits)
             {
                 if (bit)
-                    partialByte |= (byte)(1 << partialCount);
+                    partialByte |= (byte)(0x80 >> partialCount);
                 partialCount++;
                 if (partialCount == 8)
                 {
@@ -40,7 +41,7 @@ namespace BitPrefixTrie
             _partialByte = partialByte;
         }
 
-        internal IEnumerable<byte> AsBytes()
+        public IEnumerable<byte> AsBytes()
         {
             if (_partialBitCount != 0) throw new InvalidOperationException();
             return _fullBytes;
@@ -60,8 +61,9 @@ namespace BitPrefixTrie
         private IEnumerable<bool> GetBits(byte b, int count)
         {
             for (int i = 0; i < count; i++)
-                yield return (b & (1 << i)) != 0;
+                yield return (b & (0x80 >> i)) != 0;
         }
+
         public Bits Common(IEnumerable<bool> enumerable)
         {
             return new Bits(CommonInternal(enumerable));
@@ -87,6 +89,11 @@ namespace BitPrefixTrie
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public override string ToString()
+        {
+            return $"({Count})" + new string(this.Select(x => x ? '1' : '0').ToArray());
         }
     }
 }

@@ -55,9 +55,8 @@ namespace BitPrefixTrieTests
             //Then
             var items = trie.ToArray();
             AssertEqual(items[0], 0x1, "first");
-            AssertEqual(items[1], 0x2, "third");
+            AssertEqual(items[1], 0x3, "third");
         }
-
 
         private static void AssertEqual(KeyValuePair<IEnumerable<byte>, string> item, byte key, string value)
         {

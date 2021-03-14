@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace BitPrefixTrie
 {
 
+    [DebuggerDisplay("{Prefix} {Value}")]
     public class TrieItem<T> : IEnumerable<KeyValuePair<Bits, T>>
     {
         public readonly Bits Prefix;
@@ -80,24 +82,25 @@ namespace BitPrefixTrie
                     var oldChild = child;
                     child = new TrieItem<T>(commonBits);
                     child.AddItem(new Bits(enumerable.Skip(commonBits.Count)), value);
-                    var discriminator = oldChild.Prefix.Skip(commonBits.Count).First();
-                    var splitChild = new TrieItem<T>(new Bits(oldChild.Prefix.Skip(commonBits.Count + 1)), oldChild.HasValue, oldChild.Value, oldChild.True, oldChild.False);
-                    child.AddChild(discriminator, splitChild);
+                    child.MakeGrandchild(oldChild);
                 }
             }
 
         }
 
-        private void AddChild(bool discriminator, TrieItem<T> splitChild)
+        private void MakeGrandchild(TrieItem<T> oldChild)
         {
-            if(discriminator)
+            var discriminator = oldChild.Prefix.Skip(Prefix.Count).First();
+            var grandchild = new TrieItem<T>(new Bits(oldChild.Prefix.Skip(Prefix.Count + 1)), oldChild.HasValue, oldChild.Value, oldChild.True, oldChild.False);
+            if (discriminator)
             {
                 if (True != null) throw new InvalidOperationException("Child 1 already set");
-                True = splitChild;
-            } else
+                True = grandchild;
+            }
+            else
             {
-                if( False != null) throw new InvalidOperationException("Child 0 already set");
-                False = splitChild;
+                if (False != null) throw new InvalidOperationException("Child 0 already set");
+                False = grandchild;
             }
         }
 
@@ -105,12 +108,12 @@ namespace BitPrefixTrie
         {
             if (HasValue)
                 yield return new KeyValuePair<Bits, T>(Prefix, Value);
-            if (True != null)
-                foreach (var item in True)
-                    yield return new KeyValuePair<Bits, T>(new Bits(Prefix.Append(true).Concat(item.Key)), item.Value);
             if (False != null)
                 foreach (var item in False)
                     yield return new KeyValuePair<Bits, T>(new Bits(Prefix.Append(false).Concat(item.Key)), item.Value);
+            if (True != null)
+                foreach (var item in True)
+                    yield return new KeyValuePair<Bits, T>(new Bits(Prefix.Append(true).Concat(item.Key)), item.Value);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
