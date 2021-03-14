@@ -116,6 +116,24 @@ namespace BitPrefixTrie
                     yield return new KeyValuePair<Bits, T>(new Bits(Prefix.Append(true).Concat(item.Key)), item.Value);
         }
 
+        public IEnumerable<string> GetDescription()
+        {
+            yield return $"{Prefix} {Value}";
+            var padding = new string(' ', Prefix.Count);
+            if (False != null)
+            {
+                yield return $"{padding} + 0";
+                foreach (var item in False.GetDescription())
+                    yield return $"{padding} |  " + item;
+            }
+            if (True != null)
+            {
+                yield return $"{padding} + 1";
+                foreach (var item in True.GetDescription())
+                    yield return $"{padding} |  " + item;
+            }
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();

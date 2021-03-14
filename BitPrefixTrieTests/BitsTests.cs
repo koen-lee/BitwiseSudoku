@@ -44,5 +44,13 @@ namespace BitPrefixTrieTests
             Assert.Equal(bytes, bits2.AsBytes());
         }
 
+        [Fact]
+        public void Given_a_bits_list_then_msb_is_first()
+        {
+            //Given
+            var bits = new Bits(new[] { true, true, true, true, false, false, false, false });
+            Assert.Equal(new byte[] { 0xF0 }, bits.AsBytes());
+        }
+
     }
 }

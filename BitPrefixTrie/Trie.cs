@@ -21,6 +21,11 @@ namespace BitPrefixTrie
             }
         }
 
+        public override string ToString()
+        {
+            return string.Join("\n", root.GetDescription());
+        }
+
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();

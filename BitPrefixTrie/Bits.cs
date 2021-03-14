@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace BitPrefixTrie
 {
+    [DebuggerDisplay("{ToString()}")]
     public readonly struct Bits : IEnumerable<bool>
     {
         internal static readonly Bits Empty = new Bits(new Byte[0]);
@@ -93,7 +95,7 @@ namespace BitPrefixTrie
 
         public override string ToString()
         {
-            return $"({Count})" + new string(this.Select(x => x ? '1' : '0').ToArray());
+            return new string(this.Select(x => x ? '1' : '0').ToArray());
         }
     }
 }
