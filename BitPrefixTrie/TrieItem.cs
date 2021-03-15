@@ -68,7 +68,6 @@ namespace BitPrefixTrie
                 child = new TrieItem<T>(new Bits(enumerable), value);
             else
             {
-
                 var commonBits = child.Prefix.Common(enumerable);
                 if (child.Prefix.Count == commonBits.Count)
                 {
@@ -84,7 +83,6 @@ namespace BitPrefixTrie
                     child.MakeGrandchild(oldChild);
                 }
             }
-
         }
 
         private void MakeGrandchild(TrieItem<T> oldChild)
@@ -118,7 +116,7 @@ namespace BitPrefixTrie
         public IEnumerable<string> GetDescription()
         {
             yield return $"{Prefix} {Value}";
-            var padding = new string(' ', (Math.Max(0,Prefix.Count - 3)));
+            var padding = new string(' ', (Math.Max(0, Prefix.Count - 3)));
             if (False != null)
             {
                 yield return $"{padding} + 0";
