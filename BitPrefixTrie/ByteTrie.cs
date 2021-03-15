@@ -9,7 +9,7 @@ namespace BitPrefixTrie
         private readonly TrieItem<TValue> root = new TrieItem<TValue>(Bits.Empty);
         public void AddItem(ReadOnlySpan<byte> key, TValue value)
         {
-            root.AddItem(key.ToBits(), value);
+            root.AddItem(new Bits(key.ToArray()), value);
         }
 
         public IEnumerator<KeyValuePair<IEnumerable<byte>, TValue>> GetEnumerator()
