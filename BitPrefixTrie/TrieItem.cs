@@ -15,7 +15,7 @@ namespace BitPrefixTrie
         private TrieItem<T> False;
         private TrieItem<T> True;
         public readonly T Value;
-        private readonly bool HasValue;
+        public bool HasValue;
 
         public TrieItem(Bits prefix)
         {
@@ -144,6 +144,20 @@ namespace BitPrefixTrie
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public TrieItem<T> Find(Bits bits)
+        {
+            if (bits.Count <= Prefix.Count)
+                return bits.Equals(Prefix) ? this : null;
+            if (bits.Skip(Prefix.Count).First())
+            {
+                return True?.Find(new Bits(bits.Skip(Prefix.Count + 1)));
+            }
+            else
+            {
+                return False?.Find(new Bits(bits.Skip(Prefix.Count + 1)));
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Linq;
 namespace BitPrefixTrie
 {
     [DebuggerDisplay("{ToString()}")]
-    public readonly struct Bits : IEnumerable<bool>
+    public readonly struct Bits : IEnumerable<bool>, IEquatable<Bits>
     {
         internal static readonly Bits Empty = new Bits(new Byte[0]);
         private readonly byte[] _fullBytes;
@@ -96,6 +96,23 @@ namespace BitPrefixTrie
         public override string ToString()
         {
             return new string(this.Select(x => x ? '1' : '0').ToArray());
+        }
+
+        public bool Equals(Bits other)
+        {
+            return _partialBitCount == other._partialBitCount &&
+                   _partialByte == other._partialByte &&
+                   ((ReadOnlySpan<byte>)_fullBytes).SequenceEqual(other._fullBytes);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Bits other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(_partialBitCount, _partialByte, _fullBytes);
         }
     }
 }

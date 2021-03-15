@@ -20,7 +20,7 @@ namespace BitPrefixTrieTests
         {
             //Given
             var trie = new StringTrie<string>();
-            trie.AddItem("Alpha", "first");
+            trie.Add("Alpha", "first");
             //Then
             var item = trie.Single();
 
@@ -32,8 +32,21 @@ namespace BitPrefixTrieTests
         {
             //Given
             var trie = new StringTrie<string>();
-            trie.AddItem("Alpha", "first");
-            trie.AddItem("Beta", "second");
+            trie.Add("Alpha", "first");
+            trie.Add("Beta", "second");
+            //Then
+            var items = trie.ToArray();
+            AssertEqual(items[0], "Alpha", "first");
+            AssertEqual(items[1], "Beta", "second");
+        }
+
+        [Fact]
+        public void Given_a_new_Trie_When_two_items_are_added_with_indexer_Then_it_has_two_item()
+        {
+            //Given
+            var trie = new StringTrie<string>();
+            trie["Alpha"] = "first";
+            trie["Beta"] = "second";
             //Then
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
@@ -45,8 +58,8 @@ namespace BitPrefixTrieTests
         {
             //Given
             var trie = new StringTrie<string>();
-            trie.AddItem("Beta", "second");
-            trie.AddItem("Alpha", "first");
+            trie.Add("Beta", "second");
+            trie.Add("Alpha", "first");
             //Then
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
@@ -58,24 +71,23 @@ namespace BitPrefixTrieTests
         {
             //Given
             var trie = new StringTrie<string>();
-            trie.AddItem("Alpha", "first");
-            trie.AddItem("Aztec", "second");
+            trie.Add("Alpha", "first");
+            trie.Add("Aztec", "second");
             //Then
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Aztec", "second");
         }
 
-
         [Fact]
         public void Given_a_Trie_with_two_items_When_a_subitem_is_added_Then_it_has_three_items()
         {
             //Given
             var trie = new StringTrie<string>();
-            trie.AddItem("Alpha", "first");
-            trie.AddItem("B", "second");
+            trie.Add("Alpha", "first");
+            trie.Add("B", "second");
             //When
-            trie.AddItem("Beta", "third");
+            trie.Add("Beta", "third");
 
             Helper.WriteLine(trie.ToString());
             //Then
@@ -85,16 +97,15 @@ namespace BitPrefixTrieTests
             AssertEqual(items[2], "Beta", "third");
         }
 
-
         [Fact]
         public void Given_a_Trie_with_two_items_When_a_subitem_is_added_at_a_node_Then_it_has_three_items()
         {
             //Given
             var trie = new StringTrie<string>();
-            trie.AddItem("Bat", "second");
-            trie.AddItem("Bison", "third");
+            trie.Add("Bat", "second");
+            trie.Add("Bison", "third");
             //When
-            trie.AddItem("B", "first");
+            trie.Add("B", "first");
 
             Helper.WriteLine(trie.ToString());
             //Then
@@ -102,6 +113,20 @@ namespace BitPrefixTrieTests
             AssertEqual(items[0], "B", "first");
             AssertEqual(items[1], "Bat", "second");
             AssertEqual(items[2], "Bison", "third");
+        }
+
+
+        [Fact]
+        public void Given_a_new_Trie_with_two_items_are_added_When_toArray_Then_the_array_is_filled()
+        {
+            //Given
+            var trie = new StringTrie<string>();
+            trie.Add("Beta", "second");
+            trie.Add("Alpha", "first");
+            //Then
+            var items = trie.ToArray();
+            AssertEqual(items[0], "Alpha", "first");
+            AssertEqual(items[1], "Beta", "second");
         }
 
         private static void AssertEqual(KeyValuePair<string, string> item, string key, string value)
