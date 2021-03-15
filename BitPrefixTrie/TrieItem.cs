@@ -14,8 +14,8 @@ namespace BitPrefixTrie
 
         private TrieItem<T> False;
         private TrieItem<T> True;
-        public T Value { get; private set; }
-        private bool HasValue { get; set; }
+        public readonly T Value;
+        private readonly bool HasValue;
 
         public TrieItem(Bits prefix)
         {
