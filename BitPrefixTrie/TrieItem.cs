@@ -43,14 +43,7 @@ namespace BitPrefixTrie
             var common = newPrefix.Common(Prefix);
             if (common.Count == newPrefix.Count)
             {
-                if (HasValue)
-                    throw new ArgumentException("Duplicate key");
-                else
-                {
-                    HasValue = true;
-                    Value = value;
-                    throw new NotSupportedException("we want to make it readonly");
-                }
+                throw new InvalidOperationException("either a duplicate key or we need to mutate ourselves, both should be caught in AddToChild");
             }
             else if (newPrefix.Skip(Prefix.Count).First())
             {
@@ -64,22 +57,39 @@ namespace BitPrefixTrie
 
         private void AddToChild(ref TrieItem<T> child, IEnumerable<bool> enumerable, T value)
         {
+            var bits = new Bits(enumerable);
             if (child == null)
-                child = new TrieItem<T>(new Bits(enumerable), value);
+                child = new TrieItem<T>(bits, value);
             else
             {
-                var commonBits = child.Prefix.Common(enumerable);
+                var commonBits = child.Prefix.Common(bits);
                 if (child.Prefix.Count == commonBits.Count)
                 {
-                    // Set value, if not already set
-                    child.AddItem(new Bits(enumerable), value);
+                    if (child.Prefix.Count == bits.Count)
+                    {
+                        // Set value, if not already set
+                        if (child.HasValue)
+                            throw new ArgumentException("Duplicate key");
+
+                        var oldChild = child;
+                        child = new TrieItem<T>(oldChild.Prefix, true, value, oldChild.True, oldChild.False);
+                    }
+                    else
+                        child.AddItem(bits, value);
                 }
                 else
                 {
                     //split subtrie along the common prefix
                     var oldChild = child;
-                    child = new TrieItem<T>(commonBits);
-                    child.AddItem(new Bits(enumerable), value);
+                    if (commonBits.Count == bits.Count)
+                    {
+                        child = new TrieItem<T>(commonBits, value);
+                    }
+                    else
+                    {
+                        child = new TrieItem<T>(commonBits);
+                        child.AddItem(bits, value);
+                    }
                     child.MakeGrandchild(oldChild);
                 }
             }
