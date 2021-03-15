@@ -49,6 +49,7 @@ namespace BitPrefixTrie
                 {
                     HasValue = true;
                     Value = value;
+                    throw new NotSupportedException("we want to make it readonly");
                 }
             }
             else if (newPrefix.Skip(Prefix.Count).First())

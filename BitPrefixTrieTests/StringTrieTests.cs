@@ -86,6 +86,23 @@ namespace BitPrefixTrieTests
         }
 
 
+        [Fact]
+        public void Given_a_Trie_with_two_items_When_a_subitem_is_added_at_a_node_Then_it_has_three_items()
+        {
+            //Given
+            var trie = new StringTrie<string>();
+            trie.AddItem("Bat", "second");
+            trie.AddItem("Bison", "third");
+            //When
+            trie.AddItem("B", "first");
+
+            Helper.WriteLine(trie.ToString());
+            //Then
+            var items = trie.ToArray();
+            AssertEqual(items[0], "B", "first");
+            AssertEqual(items[1], "Bat", "second");
+            AssertEqual(items[2], "Bison", "third");
+        }
 
         private static void AssertEqual(KeyValuePair<string, string> item, string key, string value)
         {
