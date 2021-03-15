@@ -85,6 +85,27 @@ namespace BitPrefixTrieTests
             AssertEqual(items[2], 0x3, "third");
         }
 
+        [Fact]
+        public void Given_a_Trie_with_two_items_When_a_subitem_is_added_to_an_existing_node_Then_it_has_three_items()
+        {
+            //Given
+            var trie = new ByteTrie<string>();
+            trie.AddItem(new byte[] { 0x1, 0xff }, "0x01ff");
+            trie.AddItem(new byte[] { 0x1, 0x00 }, "0x0100");
+            //When
+            trie.AddItem(new byte[] { 0x1 }, "0x01");
+
+            Helper.WriteLine(trie.ToString());
+            //Then
+            var items = trie.ToArray();
+            Assert.Equal(new byte[] { 0x1 }, items[0].Key);
+            Assert.Equal("0x01", items[0].Value);
+            Assert.Equal(new byte[] { 0x1, 0x00 }, items[1].Key);
+            Assert.Equal("0x0100", items[1].Value);
+            Assert.Equal(new byte[] { 0x1, 0xff }, items[2].Key);
+            Assert.Equal("0x01ff", items[2].Value);
+        }
+
         private static void AssertEqual(KeyValuePair<IEnumerable<byte>, string> item, byte key, string value)
         {
             Assert.Equal(new[] { key }, item.Key);
