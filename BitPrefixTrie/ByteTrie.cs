@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace BitPrefixTrie
 {
-    public class Trie<TValue> : IEnumerable<KeyValuePair<IEnumerable<byte>, TValue>>
+    public class ByteTrie<TValue> : IEnumerable<KeyValuePair<IEnumerable<byte>, TValue>>
     {
         private readonly TrieItem<TValue> root = new TrieItem<TValue>(Bits.Empty);
         public void AddItem(ReadOnlySpan<byte> key, TValue value)

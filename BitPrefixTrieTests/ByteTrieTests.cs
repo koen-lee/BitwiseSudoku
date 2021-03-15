@@ -6,11 +6,11 @@ using Xunit.Abstractions;
 
 namespace BitPrefixTrieTests
 {
-    public class TrieTests
+    public class ByteTrieTests
     {
         public ITestOutputHelper Helper { get; }
 
-        public TrieTests(ITestOutputHelper helper)
+        public ByteTrieTests(ITestOutputHelper helper)
         {
             Helper = helper;
         }
@@ -19,7 +19,7 @@ namespace BitPrefixTrieTests
         public void Given_a_new_Trie_When_one_item_is_added_Then_it_has_one_item()
         {
             //Given
-            var trie = new Trie<string>();
+            var trie = new ByteTrie<string>();
             trie.AddItem(new byte[] { 0x1 }, "first");
             //Then
             var item = trie.Single();
@@ -31,7 +31,7 @@ namespace BitPrefixTrieTests
         public void Given_a_new_Trie_When_two_items_are_added_Then_it_has_two_item()
         {
             //Given
-            var trie = new Trie<string>();
+            var trie = new ByteTrie<string>();
             trie.AddItem(new byte[] { 0x1 }, "first");
             trie.AddItem(new byte[] { 0x2 }, "second");
             //Then
@@ -44,7 +44,7 @@ namespace BitPrefixTrieTests
         public void Given_a_new_Trie_When_two_items_are_added_in_reverse_order_Then_it_has_two_item()
         {
             //Given
-            var trie = new Trie<string>();
+            var trie = new ByteTrie<string>();
             trie.AddItem(new byte[] { 0x2 }, "second");
             trie.AddItem(new byte[] { 0x1 }, "first");
             //Then
@@ -57,7 +57,7 @@ namespace BitPrefixTrieTests
         public void Given_a_Trie_with_one_item_When_a_subitem_is_added_Then_it_has_two_item()
         {
             //Given
-            var trie = new Trie<string>();
+            var trie = new ByteTrie<string>();
             trie.AddItem(new byte[] { 0x1 }, "first");
             trie.AddItem(new byte[] { 0x3 }, "third");
             //Then
@@ -71,7 +71,7 @@ namespace BitPrefixTrieTests
         public void Given_a_Trie_with_two_items_When_a_subitem_is_added_Then_it_has_three_items()
         {
             //Given
-            var trie = new Trie<string>();
+            var trie = new ByteTrie<string>();
             trie.AddItem(new byte[] { 0x1 }, "first");
             trie.AddItem(new byte[] { 0x3 }, "third");
             //When

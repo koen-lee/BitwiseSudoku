@@ -117,7 +117,7 @@ namespace BitPrefixTrie
         public IEnumerable<string> GetDescription()
         {
             yield return $"{Prefix} {Value}";
-            var padding = new string(' ', Prefix.Count);
+            var padding = new string(' ', (Math.Max(0,Prefix.Count - 3)));
             if (False != null)
             {
                 yield return $"{padding} + 0";
