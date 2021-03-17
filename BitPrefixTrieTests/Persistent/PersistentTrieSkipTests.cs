@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using BitPrefixTrie;
+using BitPrefixTrie.Persistent;
 using Xunit;
 using Xunit.Abstractions;
 

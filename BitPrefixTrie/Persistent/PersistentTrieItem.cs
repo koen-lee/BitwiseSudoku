@@ -83,6 +83,8 @@ namespace BitPrefixTrie.Persistent
             }
         }
 
+        public long Count => FalseCount + TrueCount + (HasValue ? 1 : 0);
+
         private Func<PersistentTrieItem> GetChildFactory(uint offset)
         {
             if (offset == 0)
@@ -259,13 +261,13 @@ namespace BitPrefixTrie.Persistent
             {
                 if (True != null) throw new InvalidOperationException("Child 1 already set");
                 True = grandchild;
-                TrueCount = (uint)(oldChild.TrueCount + oldChild.FalseCount + (oldChild.HasValue ? 1 : 0));
+                TrueCount = (uint)oldChild.Count;
             }
             else
             {
                 if (False != null) throw new InvalidOperationException("Child 0 already set");
                 False = grandchild;
-                FalseCount = (uint)(oldChild.TrueCount + oldChild.FalseCount + (oldChild.HasValue ? 1 : 0));
+                FalseCount = (uint)oldChild.Count;
             }
             Persist();
         }

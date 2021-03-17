@@ -7,7 +7,7 @@ using System.Text;
 
 namespace BitPrefixTrie.Persistent
 {
-    public class PersistentTrie : IEnumerable<KeyValuePair<string, string>>
+    public class PersistentTrie : IDictionary<string, string>
     {
         private PersistentTrieItem _root;
         private static readonly Encoding Encoding = Encoding.UTF8;
@@ -22,7 +22,6 @@ namespace BitPrefixTrie.Persistent
         public void Add(string key, string value)
         {
             _root.AddItem(GetBits(key), value);
-            Count++;
         }
 
         public bool ContainsKey(string key)
@@ -153,7 +152,7 @@ namespace BitPrefixTrie.Persistent
             return Contains(item) && Remove(item.Key);
         }
 
-        public int Count { get; private set; }
+        public int Count => (int)_root.Count;
         public bool IsReadOnly => false;
     }
 }

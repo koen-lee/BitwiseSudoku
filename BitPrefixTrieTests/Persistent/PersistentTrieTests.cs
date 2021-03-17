@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BitPrefixTrie;
+using BitPrefixTrie.Persistent;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -70,7 +71,9 @@ namespace BitPrefixTrieTests.Persistent
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Beta", "second");
-            Assert.Equal(trie, new PersistentTrie(_stream));
+            var copy = new PersistentTrie(_stream);
+            Assert.Equal(trie, copy);
+            Assert.Equal(trie.Count, copy.Count);
         }
 
         [Fact]
