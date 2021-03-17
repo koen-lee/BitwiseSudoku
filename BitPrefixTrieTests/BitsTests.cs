@@ -52,5 +52,21 @@ namespace BitPrefixTrieTests
             Assert.Equal(new byte[] { 0xF0 }, bits.AsBytes());
         }
 
+        [Fact]
+        public void Given_complete_bytes_When_GetPartialBytes_then_the_original_is_returned()
+        {
+            //Given
+            var bits = new Bits(new byte[] { 0x1, 0x2, 0xff });
+            Assert.Equal(new byte[] { 0x1, 0x2, 0xff }, bits.GetPartialBytes());
+        }
+
+        [Fact]
+        public void Given_partial_bytes_When_GetPartialBytes_then_the_partial_byte_is_returned_too()
+        {
+            //Given
+            var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
+            Assert.Equal(new byte[] { 0xF0, 0x80 }, bits.GetPartialBytes());
+        }
+
     }
 }

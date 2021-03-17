@@ -17,7 +17,7 @@ namespace BitPrefixTrie
 
         public Bits(byte[] bits)
         {
-            _fullBytes = bits;
+            _fullBytes = bits ?? throw new ArgumentNullException(nameof(bits));
             _partialBitCount = _partialByte = 0;
         }
 
@@ -46,6 +46,13 @@ namespace BitPrefixTrie
         public IEnumerable<byte> AsBytes()
         {
             if (_partialBitCount != 0) throw new InvalidOperationException();
+            return _fullBytes;
+        }
+
+        public IEnumerable<byte> GetPartialBytes()
+        {
+            if (_partialBitCount > 0)
+                return _fullBytes.Append(_partialByte);
             return _fullBytes;
         }
 
