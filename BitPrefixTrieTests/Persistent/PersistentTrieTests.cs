@@ -139,7 +139,7 @@ namespace BitPrefixTrieTests.Persistent
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Beta", "second");
 
-            Assert.Equal(trie, new PersistentTrie(_stream));
+            Assert.Equal(trie.AsEnumerable(), new PersistentTrie(_stream).AsEnumerable());
         }
 
         private static void AssertEqual(KeyValuePair<string, string> item, string key, string value)

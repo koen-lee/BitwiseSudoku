@@ -5,17 +5,17 @@ using Xunit.Abstractions;
 
 namespace BitPrefixTrieTests.Persistent
 {
-    public class StringTrieRemoveTests
+    public class PersistentTrieRemoveTests
     {
         private MemoryStream _stream;
         private readonly PersistentTrie _underTest;
         private ITestOutputHelper Helper { get; }
 
-        public StringTrieRemoveTests(ITestOutputHelper helper)
+        public PersistentTrieRemoveTests(ITestOutputHelper helper)
         {
             Helper = helper;
             _stream = new MemoryStream();
-            _underTest = new PersistentTrie(_stream)
+            _ = new PersistentTrie(_stream)
             {
                 {"Alpha", "Alpha value"},
                 {"Alphabet", "Alphabet value"},
@@ -29,6 +29,7 @@ namespace BitPrefixTrieTests.Persistent
                 {"Aarg", "Aarg value"},
                 {"Beast", "Beast value"},
             };
+            _underTest = new PersistentTrie(_stream);
         }
 
         [Fact]

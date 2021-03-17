@@ -23,16 +23,18 @@ namespace BitPrefixTrie.Persistent
     public class PersistentTrieItem : IEnumerable<KeyValuePair<Bits, string>>
     {
         private readonly Stream _storage;
-        private readonly long _offset;
+        private readonly uint _offset;
 
         public readonly Bits Prefix;
 
         private Func<PersistentTrieItem> False;
+        private uint FalseCount;
         private Func<PersistentTrieItem> True;
+        private uint TrueCount;
         public readonly string Value;
         public bool HasValue;
 
-        public PersistentTrieItem(Stream storage, long offset)
+        public PersistentTrieItem(Stream storage, uint offset)
         {
             _offset = offset;
             _storage = storage;
@@ -45,8 +47,10 @@ namespace BitPrefixTrie.Persistent
             {
                 // Stream format:
                 // [1:byte] hasValue flag
-                // [8:long] offset of True
-                // [8:long] offset of False
+                // [4:uint] offset of True
+                // [4:uint] True value count
+                // [4:uint] offset of False
+                // [4:uint] False value count
                 // [2:ushort] prefix length in bits
                 // [ceiling(prefix/8):byte[]] prefix bits
                 // hasValue? [2:ushort] size of value in bytes
@@ -61,8 +65,10 @@ namespace BitPrefixTrie.Persistent
                 {
                     throw new InvalidDataException("this is no HasValue flag");
                 }
-                var trueOffset = BitConverter.ToInt64(data, 1);
-                var falseOffset = BitConverter.ToInt64(data, 9);
+                var trueOffset = BitConverter.ToUInt32(data, 1);
+                TrueCount = BitConverter.ToUInt32(data, 5);
+                var falseOffset = BitConverter.ToUInt32(data, 9);
+                FalseCount = BitConverter.ToUInt32(data, 13);
                 var prefixLength = BitConverter.ToUInt16(data, 17);
                 var length = (prefixLength / 8) + (prefixLength % 8 == 0 ? 0 : 1);
                 var prefixBytes = ReadArray(length);
@@ -77,7 +83,7 @@ namespace BitPrefixTrie.Persistent
             }
         }
 
-        private Func<PersistentTrieItem> GetChildFactory(long offset)
+        private Func<PersistentTrieItem> GetChildFactory(uint offset)
         {
             if (offset == 0)
                 return null;
@@ -103,8 +109,10 @@ namespace BitPrefixTrie.Persistent
         {
             // Stream format:
             // [1:byte] hasValue flag
-            // [8:long] offset of True
-            // [8:long] offset of False
+            // [4:uint] offset of True
+            // [4:uint] True value count
+            // [4:uint] offset of False
+            // [4:uint] False value count
             // [2:ushort] prefix length in bits
             // [ceiling(prefix/8):byte[]] prefix bits
             // hasValue? [2:ushort] size of value in bytes
@@ -114,7 +122,9 @@ namespace BitPrefixTrie.Persistent
 
             buffer.AddRange(new[] { (byte)(HasValue ? 0xff : 0x00) });
             buffer.AddRange(BitConverter.GetBytes(True?.Invoke()._offset ?? 0));
+            buffer.AddRange(BitConverter.GetBytes(TrueCount));
             buffer.AddRange(BitConverter.GetBytes(False?.Invoke()._offset ?? 0));
+            buffer.AddRange(BitConverter.GetBytes(FalseCount));
             buffer.AddRange(BitConverter.GetBytes((ushort)Prefix.Count));
             buffer.AddRange(Prefix.GetPartialBytes().ToArray());
             if (HasValue)
@@ -131,7 +141,7 @@ namespace BitPrefixTrie.Persistent
         private PersistentTrieItem(Stream storage)
         {
             _storage = storage;
-            _offset = _storage.Length;
+            _offset = (uint)_storage.Length;
         }
 
         public PersistentTrieItem(Stream storage, Bits prefix)
@@ -151,14 +161,17 @@ namespace BitPrefixTrie.Persistent
             Persist();
         }
 
-        private PersistentTrieItem(Stream storage, Bits prefix, bool hasValue, string value, Func<PersistentTrieItem> @true, Func<PersistentTrieItem> @false)
+        private PersistentTrieItem(Stream storage, Bits prefix, bool hasValue, string value,
+            Func<PersistentTrieItem> @true, Func<PersistentTrieItem> @false, uint trueCount, uint falseCount)
             : this(storage)
         {
             Prefix = prefix;
             HasValue = hasValue;
             Value = value;
             True = @true;
+            TrueCount = trueCount;
             False = @false;
+            FalseCount = falseCount;
             Persist();
         }
 
@@ -172,22 +185,22 @@ namespace BitPrefixTrie.Persistent
 
             if (newPrefix.Skip(Prefix.Count).First())
             {
-                AddToChild(ref True, newPrefix.Skip(Prefix.Count + 1), value);
+                AddToChild(ref True, ref TrueCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
             else
             {
-                AddToChild(ref False, newPrefix.Skip(Prefix.Count + 1), value);
+                AddToChild(ref False, ref FalseCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
         }
 
-        private void AddToChild(ref Func<PersistentTrieItem> child, IEnumerable<bool> enumerable, string value)
+        private void AddToChild(ref Func<PersistentTrieItem> child, ref uint childCount, IEnumerable<bool> enumerable,
+            string value)
         {
             var bits = new Bits(enumerable);
             var theChild = child?.Invoke();
             if (theChild == null)
             {
                 child = NewChild(new PersistentTrieItem(_storage, bits, value));
-                Persist();
             }
             else
             {
@@ -203,8 +216,7 @@ namespace BitPrefixTrie.Persistent
                         var oldChild = theChild;
                         child = NewChild(new PersistentTrieItem(_storage, oldChild.Prefix, true, value,
                             oldChild.True,
-                            oldChild.False));
-                        Persist();
+                            oldChild.False, oldChild.TrueCount, oldChild.FalseCount));
                     }
                     else
                         theChild.AddItem(bits, value);
@@ -222,9 +234,10 @@ namespace BitPrefixTrie.Persistent
                         child().AddItem(bits, value);
                     }
                     child().MakeGrandchild(theChild);
-                    Persist();
                 }
             }
+            childCount++;
+            Persist();
         }
 
         private Func<PersistentTrieItem> NewChild(PersistentTrieItem child)
@@ -241,16 +254,18 @@ namespace BitPrefixTrie.Persistent
                 oldChild.HasValue,
                 oldChild.Value,
                 oldChild.True,
-                oldChild.False));
+                oldChild.False, oldChild.TrueCount, oldChild.FalseCount));
             if (discriminator)
             {
                 if (True != null) throw new InvalidOperationException("Child 1 already set");
                 True = grandchild;
+                TrueCount = (uint)(oldChild.TrueCount + oldChild.FalseCount + (oldChild.HasValue ? 1 : 0));
             }
             else
             {
                 if (False != null) throw new InvalidOperationException("Child 0 already set");
                 False = grandchild;
+                FalseCount = (uint)(oldChild.TrueCount + oldChild.FalseCount + (oldChild.HasValue ? 1 : 0));
             }
             Persist();
         }
@@ -267,21 +282,42 @@ namespace BitPrefixTrie.Persistent
                     yield return new KeyValuePair<Bits, string>(new Bits(Prefix.Append(true).Concat(item.Key)), item.Value);
         }
 
+        public IEnumerable<KeyValuePair<Bits, string>> Skip(int count)
+        {
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+            if (count == 0 && HasValue)
+                yield return new KeyValuePair<Bits, string>(Prefix, Value);
+            var leftToSkip = count;
+            if (FalseCount > count)
+            {
+                foreach (var item in False().Skip(count))
+                    yield return new KeyValuePair<Bits, string>(new Bits(Prefix.Append(false).Concat(item.Key)), item.Value);
+                leftToSkip = 0;
+            }
+            else
+            {
+                leftToSkip -= (int)FalseCount;
+            }
+            if (True != null)
+                foreach (var item in True().Skip(leftToSkip))
+                    yield return new KeyValuePair<Bits, string>(new Bits(Prefix.Append(true).Concat(item.Key)), item.Value);
+        }
+
         public IEnumerable<string> GetDescription()
         {
-            yield return $"{Prefix} {Value}";
-            var padding = new string(' ', (Math.Max(0, Prefix.Count - 3)));
+            if (Prefix.Count > 0 || HasValue) yield return $"{Prefix} {Value}";
+            var padding = new string(' ', Prefix.Count);
             if (False != null)
             {
-                yield return $"{padding} + 0";
+                yield return $"{padding}+0";
                 foreach (var item in False().GetDescription())
-                    yield return $"{padding} |  " + item;
+                    yield return $"{padding}{(True != null ? '|' : ' ')} " + item;
             }
             if (True != null)
             {
-                yield return $"{padding} + 1";
+                yield return $"{padding}+1";
                 foreach (var item in True().GetDescription())
-                    yield return $"{padding} |  " + item;
+                    yield return $"{padding}  " + item;
             }
         }
 
@@ -304,10 +340,33 @@ namespace BitPrefixTrie.Persistent
             }
         }
 
-        public void MarkAsRemoved()
+        public bool Remove(Bits bits)
         {
-            HasValue = false;
-            Persist();
+            if (bits.Count <= Prefix.Count)
+            {
+                if (bits.Equals(Prefix) && HasValue)
+                {
+                    HasValue = false;
+                    Persist();
+                    return true;
+                }
+                else
+                    return false;
+            }
+            if (bits.Skip(Prefix.Count).First())
+            {
+                if (True == null || !True().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
+                    return false;
+                TrueCount--;
+                return true;
+            }
+            else
+            {
+                if (False == null || !False().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
+                    return false;
+                FalseCount--;
+                return true;
+            }
         }
     }
 }

@@ -4,20 +4,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using BitPrefixTrie.Persistent;
 
-namespace BitPrefixTrie
+namespace BitPrefixTrie.Persistent
 {
-    public class PersistentTrie : IDictionary<string, string>
+    public class PersistentTrie : IEnumerable<KeyValuePair<string, string>>
     {
         private PersistentTrieItem _root;
         private static readonly Encoding Encoding = Encoding.UTF8;
-        private Stream _storage;
+        private readonly Stream _storage;
 
         public PersistentTrie(Stream storage)
         {
             _storage = storage;
-            _root = new PersistentTrieItem(storage,0);
+            _root = new PersistentTrieItem(storage, 0);
         }
 
         public void Add(string key, string value)
@@ -45,13 +44,7 @@ namespace BitPrefixTrie
 
         public bool Remove(string key)
         {
-            var item = _root.Find(GetBits(key));
-            if (item == null)
-                return false;
-
-            var result = item.HasValue;
-            item.MarkAsRemoved();
-            return result;
+            return _root.Remove(GetBits(key));
         }
 
         public bool TryGetValue(string key, out string value)
@@ -85,9 +78,22 @@ namespace BitPrefixTrie
         {
             foreach (var item in _root)
             {
-                var key = Encoding.GetString(item.Key.AsBytes().ToArray());
-                yield return new KeyValuePair<string, string>(key, item.Value);
+                yield return MakeStringPair(item);
             }
+        }
+
+        public IEnumerable<KeyValuePair<string, string>> Skip(int count)
+        {
+            foreach (var item in _root.Skip(count))
+            {
+                yield return MakeStringPair(item);
+            }
+        }
+
+        private static KeyValuePair<string, string> MakeStringPair(KeyValuePair<Bits, string> item)
+        {
+            var key = Encoding.GetString(item.Key.AsBytes().ToArray());
+            return new KeyValuePair<string, string>(key, item.Value);
         }
 
         public override string ToString()
