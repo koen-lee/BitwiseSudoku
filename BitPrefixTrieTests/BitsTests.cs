@@ -1,4 +1,6 @@
-﻿using BitPrefixTrie;
+﻿using System;
+using System.Linq;
+using BitPrefixTrie;
 using Xunit;
 
 namespace BitPrefixTrieTests
@@ -66,6 +68,68 @@ namespace BitPrefixTrieTests
             //Given
             var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
             Assert.Equal(new byte[] { 0xF0, 0x80 }, bits.GetPartialBytes());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        public void Given_bits_When_Skip_then_the_remaining_bits_are_returned(int count)
+        {
+            //Given
+            var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
+            Assert.Equal(Enumerable.Skip(bits, count), bits.Skip(count));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        public void Given_bits_When_Take_then_the_remaining_bits_are_returned(int count)
+        {
+            //Given
+            var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
+            Assert.Equal(Enumerable.Take(bits, count), bits.Take(count));
+        }
+
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(3, true)]
+        [InlineData(4, false)]
+        [InlineData(5, false)]
+        [InlineData(6, false)]
+        [InlineData(7, false)]
+        [InlineData(8, true)]
+        public void Given_bits_When_First_then_the_first_bit_is_returned(int skip, bool expected)
+        {
+            //Given
+            var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
+            Assert.Equal(expected, bits.Skip(skip).First());
+        }
+
+        [Fact]
+        public void Given_empty_Bits_When_First_then_InvalidOperationException()
+        {
+            //Given
+            Assert.Throws<InvalidOperationException>(() => Bits.Empty.First());
         }
 
     }

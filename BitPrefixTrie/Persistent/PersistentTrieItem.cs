@@ -195,10 +195,9 @@ namespace BitPrefixTrie.Persistent
             }
         }
 
-        private void AddToChild(ref Func<PersistentTrieItem> child, ref uint childCount, IEnumerable<bool> enumerable,
+        private void AddToChild(ref Func<PersistentTrieItem> child, ref uint childCount, Bits bits,
             string value)
         {
-            var bits = new Bits(enumerable);
             var theChild = child?.Invoke();
             if (theChild == null)
             {
