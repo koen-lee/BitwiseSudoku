@@ -187,11 +187,11 @@ namespace BitPrefixTrie.Persistent
 
             if (newPrefix.Skip(Prefix.Count).First())
             {
-                AddToChild(ref True, ref TrueCount, newPrefix.Skip(Prefix.Count + 1), value);
+                AddToChild(ref True, ref TrueCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
             }
             else
             {
-                AddToChild(ref False, ref FalseCount, newPrefix.Skip(Prefix.Count + 1), value);
+                AddToChild(ref False, ref FalseCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
             }
         }
 

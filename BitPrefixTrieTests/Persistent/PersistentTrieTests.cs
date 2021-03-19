@@ -26,6 +26,7 @@ namespace BitPrefixTrieTests.Persistent
             var trie = new PersistentTrie(_stream);
             trie.Add("Alpha", "first");
             //Then
+            Helper.WriteLine(trie.ToString());
             var item = trie.Single();
 
             AssertEqual(item, "Alpha", "first");
@@ -38,7 +39,10 @@ namespace BitPrefixTrieTests.Persistent
             //Given
             var trie = new PersistentTrie(_stream);
             trie.Add("Alpha", "first");
+            Helper.WriteLine(trie.ToString());
             trie.Add("Beta", "second");
+            Helper.WriteLine(trie.ToString());
+            Helper.WriteLine(new PersistentTrie(_stream).ToString());
             //Then
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");

@@ -76,17 +76,30 @@ namespace BitPrefixTrie
         /// <returns></returns>
         public IEnumerable<byte> GetPartialBytes()
         {
-            if (_startBit % 8 == 0)
-                return _bits.Skip(_startBit / 8).Take(Count / 8 + (Count % 8 == 0 ? 0 : 1));
-            var bitarray = new BitArray(_bits.AsSpan(_startBit / 8, Count / 8 + 1).ToArray());
-            bitarray.LeftShift(_startBit % 8);
-            var bitsAligned = new byte[Count / 8 + 1];
-            bitarray.CopyTo(bitsAligned, 0);
+            var offset = _startBit % 8;
+            var byteCount = Count / 8 + (Count % 8 == 0 ? 0 : 1);
+            var byteStart = _startBit / 8;
+            if (offset == 0)
+            {
+                return _bits.Skip(byteStart).Take(byteCount);
+            }
+
+            if (_bits.Length == 1)
+                return new[] { (byte)(_bits[0] << offset) };
+
+            var bitsAligned = new byte[byteCount];
+            for (int i = byteStart, j = 0; j < byteCount; i++, j++)
+            {
+                bitsAligned[j] = (byte)(_bits[i] << offset);
+                if (_bits.Length > i + 1)
+                    bitsAligned[j] |= (byte)(_bits[i + 1] >> (8 - offset));
+            }
             return bitsAligned;
         }
 
         public IEnumerator<bool> GetEnumerator()
         {
+            if (Count == 0) yield break;
             var firstIndex = _startBit / 8;
             var firstBit = _startBit % 8;
             var count = Count;
@@ -100,7 +113,7 @@ namespace BitPrefixTrie
                 firstBit = 0;
             }
         }
-
+        
         public bool First()
         {
             if (Count == 0) throw new InvalidOperationException();

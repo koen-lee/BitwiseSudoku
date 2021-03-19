@@ -101,11 +101,12 @@ namespace BitPrefixTrieTests
         [InlineData(8)]
         [InlineData(9)]
         [InlineData(10)]
-        public void Given_bits_When_Take_then_the_remaining_bits_are_returned(int count)
+        public void Given_bytes_When_Skip_then_the_remaining_bits_are_returned(int count)
         {
             //Given
-            var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
-            Assert.Equal(Enumerable.Take(bits, count), bits.Take(count));
+            var bits = new Bits(new byte[] { 0xAA, 0x02, 0xFF, 0x80 });
+            Assert.Equal(Enumerable.Skip(bits, count), bits.Skip(count));
+            Assert.Equal(new Bits(Enumerable.Skip(bits, count)).GetPartialBytes(), bits.Skip(count).GetPartialBytes());
         }
 
         [Theory]
@@ -131,6 +132,15 @@ namespace BitPrefixTrieTests
             //Given
             Assert.Throws<InvalidOperationException>(() => Bits.Empty.First());
         }
+
+        [Fact]
+        public void Given_empty_Bits_When_enumerating_then_empty()
+        {
+            //Given
+            var undertest = new Bits(new byte[] { 0xF, 0xAA }, 5, 5);
+            Assert.Empty(undertest);
+        }
+
 
     }
 }
