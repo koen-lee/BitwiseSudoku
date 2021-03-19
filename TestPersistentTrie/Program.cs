@@ -28,7 +28,7 @@ namespace PhoneBook
             if (args[1] == "generate")
             {
                 var generateTimer = Stopwatch.StartNew();
-                var count = 100_000;
+                var count = 10_000;
                 var tick = count / 50;
                 for (int i = 0; i < count; i++)
                 {
@@ -45,7 +45,7 @@ namespace PhoneBook
             {
                 trie.Add(args[2], args[3]);
 
-                Defragment(ref trie, ref stream);
+                Rebuild(ref trie, ref stream);
             }
             else if (args[1] == "list")
             {
@@ -57,7 +57,10 @@ namespace PhoneBook
                     limit = int.Parse(args[3]);
                 ListPhonebook(trie.Skip(skip).Take(limit));
             }
-
+            else if (args[1] == "rebuild")
+            {
+                Rebuild(ref trie, ref stream);
+            }
             trie.Persist();
             using (stream) {/*dispose*/ }
 
@@ -65,9 +68,8 @@ namespace PhoneBook
             Console.WriteLine($"Elapsed: {stopwatch.Elapsed} ({stopwatch.Elapsed.TotalSeconds:0.0} seconds)");
         }
 
-        private static void Defragment(ref PersistentTrie trie, ref FileStream stream)
+        private static void Rebuild(ref PersistentTrie trie, ref FileStream stream)
         {
-            if (trie.Count % _defragment_threshold != 0) return;
             var timer = Stopwatch.StartNew();
             DoRebuildTree(ref trie, ref stream);
             Console.WriteLine($"Defragmenting took {timer.ElapsedMilliseconds} ms");
@@ -78,11 +80,22 @@ namespace PhoneBook
             _defragment_threshold = (int)(_defragment_threshold * 1.41);
             var newFile = new FileInfo(stream.Name + ".new");
             if (newFile.Exists) newFile.Delete();
+
+            var tick = trie.Count / 50;
+            var i = 0;
+            var generateTimer = Stopwatch.StartNew();
             using (var newStream = newFile.Open(FileMode.CreateNew))
             {
                 var newTrie = new PersistentTrie(newStream);
                 foreach (var item in trie._root)
+                {
                     newTrie._root.AddItem(new Bits(item.Key), item.Value);
+                    if (i++ % tick == 0)
+                    {
+                        Console.WriteLine($"[{i,10}] {tick / generateTimer.Elapsed.TotalSeconds:0.0} inserts/sec");
+                        generateTimer.Restart();
+                    }
+                }
                 using (stream)
                 {
                     /*dispose*/
