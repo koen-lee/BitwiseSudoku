@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using static System.BitConverter;
 
 namespace BitPrefixTrie.Persistent
 {
@@ -43,8 +44,7 @@ namespace BitPrefixTrie.Persistent
             if (offset == 0 && storage.Length == 0)
             {
                 Prefix = Bits.Empty;
-                MarkDirty();
-                Persist();
+                PersistNewItem();
             }
             else
             {
@@ -68,17 +68,17 @@ namespace BitPrefixTrie.Persistent
                 {
                     throw new InvalidDataException("this is no HasValue flag");
                 }
-                var trueOffset = BitConverter.ToUInt32(data, 1);
-                TrueCount = BitConverter.ToUInt32(data, 5);
-                var falseOffset = BitConverter.ToUInt32(data, 9);
-                FalseCount = BitConverter.ToUInt32(data, 13);
-                var prefixLength = BitConverter.ToUInt16(data, 17);
+                var trueOffset = ToUInt32(data, 1);
+                TrueCount = ToUInt32(data, 5);
+                var falseOffset = ToUInt32(data, 9);
+                FalseCount = ToUInt32(data, 13);
+                var prefixLength = ToUInt16(data, 17);
                 var length = (prefixLength / 8) + (prefixLength % 8 == 0 ? 0 : 1);
                 var prefixBytes = ReadArray(length);
                 Prefix = new Bits(new Bits(prefixBytes).Take(prefixLength));
                 if (HasValue)
                 {
-                    var valueLength = BitConverter.ToUInt16(ReadArray(2), 0);
+                    var valueLength = ToUInt16(ReadArray(2), 0);
                     Value = ReadArray(valueLength);
                 }
                 True = GetChildFactory(trueOffset);
@@ -97,8 +97,7 @@ namespace BitPrefixTrie.Persistent
         {
             HasValue = false;
             Prefix = prefix;
-            MarkDirty();
-            Persist();
+            PersistNewItem();
         }
 
         private PersistentTrieItem(Stream storage, Bits prefix, byte[] value)
@@ -107,8 +106,7 @@ namespace BitPrefixTrie.Persistent
             Value = value;
             HasValue = true;
             Prefix = prefix;
-            MarkDirty();
-            Persist();
+            PersistNewItem();
         }
 
         private PersistentTrieItem(Stream storage, Bits prefix, bool hasValue, byte[] value,
@@ -122,8 +120,7 @@ namespace BitPrefixTrie.Persistent
             TrueCount = trueCount;
             False = @false;
             FalseCount = falseCount;
-            MarkDirty();
-            Persist();
+            PersistNewItem();
         }
 
         private Func<PersistentTrieItem> GetChildFactory(uint offset)
@@ -153,6 +150,35 @@ namespace BitPrefixTrie.Persistent
             _isDirty = true;
         }
 
+        private void PersistNewItem()
+        {
+            MarkDirty();
+            Persist();
+            PersistImmutable();
+        }
+
+        /// <summary>
+        /// Persists the immutable and variable-size members: prefix and value.
+        /// </summary>
+        private void PersistImmutable()
+        {
+            List<byte> buffer = new List<byte>(20);
+
+            buffer.AddRange(GetBytes((ushort)Prefix.Count));
+            buffer.AddRange(Prefix.GetPartialBytes().ToArray());
+            if (HasValue)
+            {
+                buffer.AddRange(GetBytes((ushort)Value.Length));
+                buffer.AddRange(Value);
+            }
+            _storage.Seek(_offset + 1 + 8 + 8, SeekOrigin.Begin);
+            _storage.Write(buffer.ToArray());
+
+        }
+
+        /// <summary>
+        /// Persists the mutable parts of the item, which is everything except the prefix and value.
+        /// </summary>
         public void Persist()
         {
             if (!_isDirty) return;
@@ -167,23 +193,17 @@ namespace BitPrefixTrie.Persistent
             // hasValue? [2:ushort] size of value in bytes
             // hasValue? [size:byte[]] value (utf-8)
 
-            List<byte> buffer = new List<byte>(20);
+            byte[] buffer = new byte[1 + 8 + 8];
 
-            buffer.AddRange(new[] { (byte)(HasValue ? 0xff : 0x00) });
-            buffer.AddRange(BitConverter.GetBytes(True?.Invoke()._offset ?? 0));
-            buffer.AddRange(BitConverter.GetBytes(TrueCount));
-            buffer.AddRange(BitConverter.GetBytes(False?.Invoke()._offset ?? 0));
-            buffer.AddRange(BitConverter.GetBytes(FalseCount));
-            buffer.AddRange(BitConverter.GetBytes((ushort)Prefix.Count));
-            buffer.AddRange(Prefix.GetPartialBytes().ToArray());
-            if (HasValue)
-            {
-                buffer.AddRange(BitConverter.GetBytes((ushort)Value.Length));
-                buffer.AddRange(Value);
-            }
-
+            buffer[0] = (byte)(HasValue ? 0xff : 0x00);
+            if (!
+                TryWriteBytes(buffer.AsSpan(1), True?.Invoke()._offset ?? 0) &&
+                TryWriteBytes(buffer.AsSpan(5), TrueCount) &&
+                TryWriteBytes(buffer.AsSpan(9), False?.Invoke()._offset ?? 0) &&
+                TryWriteBytes(buffer.AsSpan(13), FalseCount)
+            ) throw new InvalidOperationException("Writing buffer failed");
             _storage.Seek(_offset, SeekOrigin.Begin);
-            _storage.Write(buffer.ToArray());
+            _storage.Write(buffer);
             False?.Invoke().Persist();
             True?.Invoke().Persist();
             _isDirty = false;
