@@ -197,10 +197,10 @@ namespace BitPrefixTrie.Persistent
 
             buffer[0] = (byte)(HasValue ? 0xff : 0x00);
             if (!
-                TryWriteBytes(buffer.AsSpan(1), True?.Invoke()._offset ?? 0) &&
+               (TryWriteBytes(buffer.AsSpan(1), True?.Invoke()._offset ?? 0) &&
                 TryWriteBytes(buffer.AsSpan(5), TrueCount) &&
                 TryWriteBytes(buffer.AsSpan(9), False?.Invoke()._offset ?? 0) &&
-                TryWriteBytes(buffer.AsSpan(13), FalseCount)
+                TryWriteBytes(buffer.AsSpan(13), FalseCount))
             ) throw new InvalidOperationException("Writing buffer failed");
             _storage.Seek(_offset, SeekOrigin.Begin);
             _storage.Write(buffer);
@@ -208,7 +208,6 @@ namespace BitPrefixTrie.Persistent
             True?.Invoke().Persist();
             _isDirty = false;
         }
-
 
         public void AddItem(Bits newPrefix, byte[] value)
         {
