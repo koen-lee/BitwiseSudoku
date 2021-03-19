@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace BitPrefixTrie.Persistent
 {
@@ -18,7 +19,7 @@ namespace BitPrefixTrie.Persistent
     /// hasValue? [ushort] size of value in bytes
     /// hasValue? [byte[size]] value (utf-8)
     /// </summary>
-    [DebuggerDisplay("{Prefix} {Encoding.Utf8.GetString(Value)}")]
+    [DebuggerDisplay("{Prefix} {System.Text.Encoding.UTF8.GetString(Value)}")]
     public class PersistentTrieItem : IEnumerable<KeyValuePair<IEnumerable<bool>, byte[]>>
     {
         private readonly Stream _storage;
@@ -33,6 +34,7 @@ namespace BitPrefixTrie.Persistent
         public readonly byte[] Value;
         public bool HasValue;
         private bool _isDirty;
+        public long Count => FalseCount + TrueCount + (HasValue ? 1 : 0);
 
         public PersistentTrieItem(Stream storage, uint offset)
         {
@@ -42,6 +44,7 @@ namespace BitPrefixTrie.Persistent
             {
                 Prefix = Bits.Empty;
                 MarkDirty();
+                Persist();
             }
             else
             {
@@ -83,7 +86,45 @@ namespace BitPrefixTrie.Persistent
             }
         }
 
-        public long Count => FalseCount + TrueCount + (HasValue ? 1 : 0);
+        private PersistentTrieItem(Stream storage)
+        {
+            _storage = storage;
+            _offset = (uint)_storage.Length;
+        }
+
+        public PersistentTrieItem(Stream storage, Bits prefix)
+            : this(storage)
+        {
+            HasValue = false;
+            Prefix = prefix;
+            MarkDirty();
+            Persist();
+        }
+
+        private PersistentTrieItem(Stream storage, Bits prefix, byte[] value)
+            : this(storage)
+        {
+            Value = value;
+            HasValue = true;
+            Prefix = prefix;
+            MarkDirty();
+            Persist();
+        }
+
+        private PersistentTrieItem(Stream storage, Bits prefix, bool hasValue, byte[] value,
+            Func<PersistentTrieItem> @true, Func<PersistentTrieItem> @false, uint trueCount, uint falseCount)
+            : this(storage)
+        {
+            Prefix = prefix;
+            HasValue = hasValue;
+            Value = value;
+            True = @true;
+            TrueCount = trueCount;
+            False = @false;
+            FalseCount = falseCount;
+            MarkDirty();
+            Persist();
+        }
 
         private Func<PersistentTrieItem> GetChildFactory(uint offset)
         {
@@ -110,7 +151,6 @@ namespace BitPrefixTrie.Persistent
         private void MarkDirty()
         {
             _isDirty = true;
-            Persist();
         }
 
         public void Persist()
@@ -149,42 +189,6 @@ namespace BitPrefixTrie.Persistent
             _isDirty = false;
         }
 
-        private PersistentTrieItem(Stream storage)
-        {
-            _storage = storage;
-            _offset = (uint)_storage.Length;
-        }
-
-        public PersistentTrieItem(Stream storage, Bits prefix)
-            : this(storage)
-        {
-            HasValue = false;
-            Prefix = prefix;
-            MarkDirty();
-        }
-
-        private PersistentTrieItem(Stream storage, Bits prefix, byte[] value)
-            : this(storage)
-        {
-            Value = value;
-            HasValue = true;
-            Prefix = prefix;
-            MarkDirty();
-        }
-
-        private PersistentTrieItem(Stream storage, Bits prefix, bool hasValue, byte[] value,
-            Func<PersistentTrieItem> @true, Func<PersistentTrieItem> @false, uint trueCount, uint falseCount)
-            : this(storage)
-        {
-            Prefix = prefix;
-            HasValue = hasValue;
-            Value = value;
-            True = @true;
-            TrueCount = trueCount;
-            False = @false;
-            FalseCount = falseCount;
-            MarkDirty();
-        }
 
         public void AddItem(Bits newPrefix, byte[] value)
         {
@@ -315,7 +319,7 @@ namespace BitPrefixTrie.Persistent
 
         public IEnumerable<string> GetDescription()
         {
-            if (Prefix.Count > 0 || HasValue) yield return $"{Prefix} {Value}";
+            if (Prefix.Count > 0 || HasValue) yield return $"{Prefix} {Encoding.UTF8.GetString(Value ?? new byte[0])}";
             var padding = new string(' ', Prefix.Count);
             if (False != null)
             {
@@ -368,6 +372,7 @@ namespace BitPrefixTrie.Persistent
                 if (True == null || !True().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
                     return false;
                 TrueCount--;
+                MarkDirty();
                 return true;
             }
             else
@@ -375,6 +380,7 @@ namespace BitPrefixTrie.Persistent
                 if (False == null || !False().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
                     return false;
                 FalseCount--;
+                MarkDirty();
                 return true;
             }
         }

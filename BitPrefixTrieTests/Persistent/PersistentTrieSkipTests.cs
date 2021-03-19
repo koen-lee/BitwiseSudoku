@@ -17,7 +17,7 @@ namespace BitPrefixTrieTests.Persistent
         {
             Helper = helper;
             _stream = new MemoryStream();
-            _ = new PersistentTrie(_stream)
+            var temp = new PersistentTrie(_stream)
             {
                 {"Alpha", "Alpha value"},
                 {"Alphabet", "Alphabet value"},
@@ -31,6 +31,7 @@ namespace BitPrefixTrieTests.Persistent
                 {"Aarg", "Aarg value"},
                 {"Beast", "Beast value"},
             };
+            temp.Persist();
 
             _underTest = new PersistentTrie(_stream);
 

@@ -32,7 +32,11 @@ namespace BitPrefixTrieTests.Persistent
             AssertEqual(item, "Alpha", "first");
 
             trie.Persist();
-            Assert.Equal(trie, new PersistentTrie(_stream));
+
+            var copy = new PersistentTrie(_stream);
+            Helper.WriteLine(copy.ToString());
+
+            Assert.Equal(trie, copy);
         }
 
         [Fact]
@@ -44,7 +48,6 @@ namespace BitPrefixTrieTests.Persistent
             Helper.WriteLine(trie.ToString());
             trie.Add("Beta", "second");
             Helper.WriteLine(trie.ToString());
-            Helper.WriteLine(new PersistentTrie(_stream).ToString());
             //Then
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
