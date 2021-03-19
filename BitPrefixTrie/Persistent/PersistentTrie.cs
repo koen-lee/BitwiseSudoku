@@ -9,7 +9,7 @@ namespace BitPrefixTrie.Persistent
 {
     public class PersistentTrie : IDictionary<string, string>
     {
-        private PersistentTrieItem _root;
+        public PersistentTrieItem _root;
         private static readonly Encoding Encoding = Encoding.UTF8;
         private readonly Stream _storage;
 
@@ -21,7 +21,7 @@ namespace BitPrefixTrie.Persistent
 
         public void Add(string key, string value)
         {
-            _root.AddItem(GetBits(key), value);
+            _root.AddItem(GetBits(key), Encoding.GetBytes(value));
         }
 
         public bool ContainsKey(string key)
@@ -51,7 +51,7 @@ namespace BitPrefixTrie.Persistent
             var foundNode = _root.Find(GetBits(key));
             if (foundNode != null && foundNode.HasValue)
             {
-                value = foundNode.Value;
+                value = Encoding.GetString(foundNode.Value);
                 return true;
             }
 
@@ -89,10 +89,10 @@ namespace BitPrefixTrie.Persistent
             }
         }
 
-        private static KeyValuePair<string, string> MakeStringPair(KeyValuePair<Bits, string> item)
+        private static KeyValuePair<string, string> MakeStringPair(KeyValuePair<IEnumerable<bool>, byte[]> item)
         {
-            var key = Encoding.GetString(item.Key.AsBytes().ToArray());
-            return new KeyValuePair<string, string>(key, item.Value);
+            var key = Encoding.GetString(new Bits(item.Key).AsBytes().ToArray());
+            return new KeyValuePair<string, string>(key, Encoding.GetString(item.Value));
         }
 
         public override string ToString()
@@ -154,5 +154,10 @@ namespace BitPrefixTrie.Persistent
 
         public int Count => (int)_root.Count;
         public bool IsReadOnly => false;
+
+        public void Persist()
+        {
+            _root.Persist();
+        }
     }
 }

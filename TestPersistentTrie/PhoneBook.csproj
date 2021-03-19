@@ -7,6 +7,11 @@
     <StartupObject>PhoneBook.Program</StartupObject>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\BitPrefixTrie\BitPrefixTrie.csproj" />
   </ItemGroup>

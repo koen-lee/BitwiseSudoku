@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PhoneBook": {
+      "commandName": "Project",
+      "commandLineArgs": "./test.btree generate"
+    }
+  }
+}

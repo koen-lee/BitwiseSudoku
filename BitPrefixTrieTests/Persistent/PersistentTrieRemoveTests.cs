@@ -16,7 +16,7 @@ namespace BitPrefixTrieTests.Persistent
         {
             Helper = helper;
             _stream = new MemoryStream();
-            _ = new PersistentTrie(_stream)
+            var unsorted = new PersistentTrie(_stream)
             {
                 {"Alpha", "Alpha value"},
                 {"Alphabet", "Alphabet value"},
@@ -30,6 +30,7 @@ namespace BitPrefixTrieTests.Persistent
                 {"Aarg", "Aarg value"},
                 {"Beast", "Beast value"},
             };
+            unsorted.Persist();
             _underTest = new PersistentTrie(_stream);
         }
 
@@ -49,6 +50,7 @@ namespace BitPrefixTrieTests.Persistent
             //when
             var result = _underTest.Remove("Gamma");
             Assert.True(result);
+            _underTest.Persist();
             Assert.Equal(_underTest, new PersistentTrie(_stream));
         }
 
@@ -58,6 +60,7 @@ namespace BitPrefixTrieTests.Persistent
             //when
             _underTest.Remove("Gamma");
             Assert.DoesNotContain("Gamma", _underTest.Keys);
+            _underTest.Persist();
             Assert.Equal(_underTest, new PersistentTrie(_stream));
         }
 
@@ -70,6 +73,8 @@ namespace BitPrefixTrieTests.Persistent
             var recreate = new PersistentTrie(newStream);
             foreach(var item in _underTest)
                 recreate.Add(item);
+
+            recreate.Persist();
             Assert.True(newStream.Length < _stream.Length);
         }
 
@@ -80,6 +85,8 @@ namespace BitPrefixTrieTests.Persistent
             Assert.True(_underTest.Remove("Gamma"));
             Assert.False(_underTest.Remove("Gamma"));
             Assert.DoesNotContain("Gamma", _underTest.Keys);
+
+            _underTest.Persist();
             Assert.Equal(_underTest, new PersistentTrie(_stream));
         }
 
@@ -91,6 +98,7 @@ namespace BitPrefixTrieTests.Persistent
             _underTest.Add("Gamma", "there and back again");
             Assert.Equal("there and back again", _underTest["Gamma"]);
 
+            _underTest.Persist();
             Assert.Equal(_underTest, new PersistentTrie(_stream));
         }
 
@@ -100,6 +108,8 @@ namespace BitPrefixTrieTests.Persistent
             //when
             var result = _underTest.Remove("nonexisting");
             Assert.False(result);
+
+            _underTest.Persist();
             Assert.Equal(_underTest, new PersistentTrie(_stream));
         }
     }

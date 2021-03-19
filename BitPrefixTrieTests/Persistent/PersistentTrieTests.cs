@@ -30,6 +30,8 @@ namespace BitPrefixTrieTests.Persistent
             var item = trie.Single();
 
             AssertEqual(item, "Alpha", "first");
+
+            trie.Persist();
             Assert.Equal(trie, new PersistentTrie(_stream));
         }
 
@@ -47,6 +49,7 @@ namespace BitPrefixTrieTests.Persistent
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Beta", "second");
+            trie.Persist();
             Assert.Equal(trie, new PersistentTrie(_stream));
         }
 
@@ -61,6 +64,7 @@ namespace BitPrefixTrieTests.Persistent
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Beta", "second");
+            trie.Persist();
             Assert.Equal(trie, new PersistentTrie(_stream));
         }
 
@@ -75,6 +79,7 @@ namespace BitPrefixTrieTests.Persistent
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Beta", "second");
+            trie.Persist();
             var copy = new PersistentTrie(_stream);
             Assert.Equal(trie, copy);
             Assert.Equal(trie.Count, copy.Count);
@@ -91,6 +96,7 @@ namespace BitPrefixTrieTests.Persistent
             var items = trie.ToArray();
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Aztec", "second");
+            trie.Persist();
             Assert.Equal(trie, new PersistentTrie(_stream));
         }
 
@@ -110,6 +116,7 @@ namespace BitPrefixTrieTests.Persistent
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "B", "second");
             AssertEqual(items[2], "Beta", "third");
+            trie.Persist();
             Assert.Equal(trie, new PersistentTrie(_stream));
         }
 
@@ -130,6 +137,7 @@ namespace BitPrefixTrieTests.Persistent
             AssertEqual(items[1], "Bat", "second");
             AssertEqual(items[2], "Bison", "third");
 
+            trie.Persist();
             Assert.Equal(trie, new PersistentTrie(_stream));
         }
 
@@ -146,6 +154,7 @@ namespace BitPrefixTrieTests.Persistent
             AssertEqual(items[0], "Alpha", "first");
             AssertEqual(items[1], "Beta", "second");
 
+            trie.Persist();
             Assert.Equal(trie.AsEnumerable(), new PersistentTrie(_stream).AsEnumerable());
         }
 
