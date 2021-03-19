@@ -59,7 +59,7 @@ namespace BitPrefixTrieTests
         {
             //Given
             var bits = new Bits(new byte[] { 0x1, 0x2, 0xff });
-            Assert.Equal(new byte[] { 0x1, 0x2, 0xff }, bits.GetPartialBytes());
+            Assert.Equal(new byte[] { 0x1, 0x2, 0xff }, bits.GetPartialBytes().ToArray());
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace BitPrefixTrieTests
         {
             //Given
             var bits = new Bits(new[] { true, true, true, true, false, false, false, false, true });
-            Assert.Equal(new byte[] { 0xF0, 0x80 }, bits.GetPartialBytes());
+            Assert.Equal(new byte[] { 0xF0, 0x80 }, bits.GetPartialBytes().ToArray());
         }
 
         [Theory]
@@ -106,7 +106,7 @@ namespace BitPrefixTrieTests
             //Given
             var bits = new Bits(new byte[] { 0xAA, 0x02, 0xFF, 0x80 });
             Assert.Equal(Enumerable.Skip(bits, count), bits.Skip(count));
-            Assert.Equal(new Bits(Enumerable.Skip(bits, count)).GetPartialBytes(), bits.Skip(count).GetPartialBytes());
+            Assert.Equal(new Bits(Enumerable.Skip(bits, count)).GetPartialBytes().ToArray(), bits.Skip(count).GetPartialBytes().ToArray());
         }
 
         [Theory]

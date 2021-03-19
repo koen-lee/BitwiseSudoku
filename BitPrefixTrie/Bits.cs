@@ -64,24 +64,24 @@ namespace BitPrefixTrie
         /// returns a byte array iff the bits form complete bytes (Count is divisible by 8), throws InvalidOperationException otherwise.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<byte> AsBytes()
+        public byte[] AsBytes()
         {
             if (Count % 8 != 0) throw new InvalidOperationException();
-            return GetPartialBytes();
+            return GetPartialBytes().ToArray();
         }
 
         /// <summary>
         /// returns a byte array where the last byte may be partial.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<byte> GetPartialBytes()
+        public ReadOnlySpan<byte> GetPartialBytes()
         {
             var offset = _startBit % 8;
             var byteCount = Count / 8 + (Count % 8 == 0 ? 0 : 1);
             var byteStart = _startBit / 8;
             if (offset == 0)
             {
-                return _bits.Skip(byteStart).Take(byteCount);
+                return _bits.AsSpan(byteStart, byteCount);
             }
 
             if (_bits.Length == 1)
@@ -103,27 +103,22 @@ namespace BitPrefixTrie
             var firstIndex = _startBit / 8;
             var firstBit = _startBit % 8;
             var count = Count;
-            foreach (var b in _bits.Skip(firstIndex))
+            for (var index = firstIndex; index < _bits.Length; index++)
             {
-                foreach (var bit in GetBits(b, firstBit))
+                var b = _bits[index];
+                for (int i = firstBit; i < 8; i++)
                 {
-                    yield return bit;
+                    yield return (b & (0x80 >> i)) != 0;
                     if (--count == 0) yield break;
                 }
                 firstBit = 0;
             }
         }
-        
+
         public bool First()
         {
             if (Count == 0) throw new InvalidOperationException();
             return 0 != (_bits[_startBit / 8] & (0x80 >> (_startBit % 8)));
-        }
-
-        private IEnumerable<bool> GetBits(byte b, int start)
-        {
-            for (int i = start; i < 8; i++)
-                yield return (b & (0x80 >> i)) != 0;
         }
 
         public Bits Common(IEnumerable<bool> enumerable)
