@@ -75,7 +75,7 @@ namespace BitPrefixTrie.Persistent
                 var prefixLength = ToUInt16(data, 17);
                 var length = (prefixLength / 8) + (prefixLength % 8 == 0 ? 0 : 1);
                 var prefixBytes = ReadArray(length);
-                Prefix = new Bits(new Bits(prefixBytes).Take(prefixLength));
+                Prefix = new Bits(prefixBytes).Take(prefixLength);
                 if (HasValue)
                 {
                     var valueLength = ToUInt16(ReadArray(2), 0);
@@ -214,11 +214,11 @@ namespace BitPrefixTrie.Persistent
             Debug.Assert(newPrefix.Common(Prefix).Count != newPrefix.Count);
             if (newPrefix.Skip(Prefix.Count).First())
             {
-                AddToChild(ref True, ref TrueCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
+                AddToChild(ref True, ref TrueCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
             else
             {
-                AddToChild(ref False, ref FalseCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
+                AddToChild(ref False, ref FalseCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
         }
 
@@ -278,7 +278,7 @@ namespace BitPrefixTrie.Persistent
         {
             var discriminator = oldChild.Prefix.Skip(Prefix.Count).First();
             var grandchild = NewChild(new PersistentTrieItem(_storage,
-                new Bits(oldChild.Prefix.Skip(Prefix.Count + 1)),
+                oldChild.Prefix.Skip(Prefix.Count + 1),
                 oldChild.HasValue,
                 oldChild.Value,
                 oldChild.True,
@@ -360,11 +360,11 @@ namespace BitPrefixTrie.Persistent
                 return bits.Equals(Prefix) ? this : null;
             if (bits.Skip(Prefix.Count).First())
             {
-                return True?.Invoke().Find(new Bits(bits.Skip(Prefix.Count + 1)));
+                return True?.Invoke().Find(bits.Skip(Prefix.Count + 1));
             }
             else
             {
-                return False?.Invoke().Find(new Bits(bits.Skip(Prefix.Count + 1)));
+                return False?.Invoke().Find(bits.Skip(Prefix.Count + 1));
             }
         }
 
@@ -383,7 +383,7 @@ namespace BitPrefixTrie.Persistent
             }
             if (bits.Skip(Prefix.Count).First())
             {
-                if (True == null || !True().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
+                if (True == null || !True().Remove(bits.Skip(Prefix.Count + 1)))
                     return false;
                 TrueCount--;
                 MarkDirty();
@@ -391,7 +391,7 @@ namespace BitPrefixTrie.Persistent
             }
             else
             {
-                if (False == null || !False().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
+                if (False == null || !False().Remove(bits.Skip(Prefix.Count + 1)))
                     return false;
                 FalseCount--;
                 MarkDirty();

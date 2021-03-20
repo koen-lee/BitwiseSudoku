@@ -22,6 +22,7 @@ namespace BitPrefixTrie
             Count = _bits.Length * 8;
         }
 
+        [Obsolete]
         public Bits(Bits bits) : this(bits._bits, bits._startBit, bits.Count)
         { }
 

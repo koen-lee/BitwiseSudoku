@@ -42,7 +42,7 @@ namespace BitPrefixTrieTests
             //Given
             byte[] bytes = new byte[] { 0xF0, 0x01, 0x02, 0x03 };
             var bits1 = new Bits(bytes);
-            var bits2 = new Bits(bits1);
+            var bits2 = new Bits(bits1.AsEnumerable());
             Assert.Equal(bytes, bits2.AsBytes());
         }
 
