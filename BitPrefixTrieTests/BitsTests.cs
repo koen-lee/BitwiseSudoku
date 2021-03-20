@@ -110,6 +110,43 @@ namespace BitPrefixTrieTests
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(8)]
+        [InlineData(9)]
+        [InlineData(10)]
+        public void Given_bytes_When_Take_then_the_remaining_bits_are_returned(int count)
+        {
+            //Given
+            var bits = new Bits(new byte[] { 0xAA, 0x02, 0xFF, 0x80 });
+            Assert.Equal(Enumerable.Take(bits, count), bits.Take(count));
+            Assert.Equal(new Bits(Enumerable.Skip(bits, count)).GetPartialBytes().ToArray(), bits.Skip(count).GetPartialBytes().ToArray());
+        }
+
+        [Fact]
+        public void Given_bytes_When_Common_then_the_common_bits_are_returned()
+        {
+            //Given
+            var bits1 = new Bits(new byte[] { 0xAA, 0x02, 0xFF, 0x80 });
+            var bits2 = new Bits(new byte[] { 0xAA, 0xFF });
+            var bits3 = new Bits(new byte[] { 0xAA });
+            var bits4 = Bits.Empty;
+
+            Assert.Equal(new byte[] { 0xAA }, bits1.Common(bits2).AsBytes());
+            Assert.Equal(new byte[] { 0xAA }, bits2.Common(bits1).AsBytes());
+            Assert.Equal(new byte[] { 0xAA }, bits1.Common(bits3).AsBytes());
+            Assert.Equal(new byte[] { 0xAA }, bits3.Common(bits1).AsBytes());
+            Assert.Equal(Bits.Empty, bits1.Common(bits4));
+            Assert.Equal(Bits.Empty, bits4.Common(bits1));
+        }
+
+        [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(2, true)]
@@ -137,7 +174,7 @@ namespace BitPrefixTrieTests
         public void Given_empty_Bits_When_enumerating_then_empty()
         {
             //Given
-            var undertest = new Bits(new byte[] { 0xF, 0xAA }, 5, 5);
+            var undertest = new Bits(new byte[] { 0xF, 0xAA }, 5, 0);
             Assert.Empty(undertest);
         }
 

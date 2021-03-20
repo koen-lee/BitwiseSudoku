@@ -13,25 +13,24 @@ namespace BitPrefixTrie
         public static readonly Bits Empty = new Bits(new byte[0]);
         private readonly byte[] _bits;
         private readonly int _startBit;
-        private readonly int _stopBit;
-        public int Count => _stopBit - _startBit;
+        public readonly int Count;
 
         public Bits(byte[] bits)
         {
             _bits = bits ?? throw new ArgumentNullException(nameof(bits));
             _startBit = 0;
-            _stopBit = _bits.Length * 8;
+            Count = _bits.Length * 8;
         }
 
-        public Bits(Bits bits) : this(bits._bits, bits._startBit, bits._stopBit)
+        public Bits(Bits bits) : this(bits._bits, bits._startBit, bits.Count)
         { }
 
-        public Bits(byte[] bits, int startBit, int stopBit)
+        public Bits(byte[] bits, int startBit, int count)
         {
-            if (stopBit < startBit)
-                throw new ArgumentException();
-            _bits = bits ?? throw new ArgumentNullException(nameof(bits));
-            _stopBit = stopBit;
+            Debug.Assert(count > 0);
+            Debug.Assert(_bits != null);
+            _bits = bits;
+            Count = count;
             _startBit = startBit;
         }
 
@@ -40,7 +39,7 @@ namespace BitPrefixTrie
             byte partialByte = 0;
             var partialCount = 0;
             _startBit = 0;
-            _stopBit = 0;
+            Count = 0;
             var fullBytes = new List<byte>();
 
             foreach (var bit in bits)
@@ -48,7 +47,7 @@ namespace BitPrefixTrie
                 if (bit)
                     partialByte |= (byte)(0x80 >> partialCount);
                 partialCount++;
-                _stopBit++;
+                Count++;
                 if (partialCount == 8)
                 {
                     fullBytes.Add(partialByte);
@@ -124,7 +123,7 @@ namespace BitPrefixTrie
 
         public Bits Common(Bits other)
         {
-            return new Bits(_bits, _startBit, _startBit + CommonCount(other));
+            return new Bits(_bits, _startBit, CommonCount(other));
         }
 
         private int CommonCount(Bits other)
@@ -164,7 +163,7 @@ namespace BitPrefixTrie
             {
                 return this;
             }
-            return new Bits(_bits, _startBit + count, _stopBit);
+            return new Bits(_bits, _startBit + count, Count - count);
         }
 
         public Bits Take(int count)
@@ -177,7 +176,7 @@ namespace BitPrefixTrie
             {
                 return Empty;
             }
-            return new Bits(_bits, _startBit, _startBit + count);
+            return new Bits(_bits, _startBit, count);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -208,7 +207,7 @@ namespace BitPrefixTrie
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(_startBit, _stopBit, _bits);
+            return HashCode.Combine(_startBit, Count, _bits);
         }
     }
 }
