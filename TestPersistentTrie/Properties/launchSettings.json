@@ -2,7 +2,7 @@
   "profiles": {
     "PhoneBook": {
       "commandName": "Project",
-      "commandLineArgs": "./test.btree generate"
+      "commandLineArgs": "./profiler.btree generate"
     }
   }
 }

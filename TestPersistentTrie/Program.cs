@@ -18,17 +18,18 @@ namespace PhoneBook
             args ??= new string[0];
             if (args.Length == 0)
                 args = new[] { "%HOMEPATH%/phonebook", "list" };
+            var stopwatch = Stopwatch.StartNew();
 
             var fileInfo = new FileInfo(Environment.ExpandEnvironmentVariables(args[0]));
-            var stream = fileInfo
-               .Open(FileMode.OpenOrCreate);
-            var stopwatch = Stopwatch.StartNew();
-            var trie = new PersistentTrie(stream);
-
+            PersistentTrie trie = null;
+            FileStream stream = null;
             if (args[1] == "generate")
             {
+                if (fileInfo.Exists)
+                    fileInfo.Delete();
+                stream = CreateTrie(fileInfo, out trie);
                 var generateTimer = Stopwatch.StartNew();
-                var count = 10_000;
+                var count = 100_000;
                 var tick = count / 50;
                 for (int i = 0; i < count; i++)
                 {
@@ -43,9 +44,8 @@ namespace PhoneBook
             }
             else if (args[1] == "add")
             {
+                stream = CreateTrie(fileInfo, out trie);
                 trie.Add(args[2], args[3]);
-
-                Rebuild(ref trie, ref stream);
             }
             else if (args[1] == "list")
             {
@@ -55,17 +55,29 @@ namespace PhoneBook
                     skip = int.Parse(args[2]);
                 if (args.Length > 3)
                     limit = int.Parse(args[3]);
+                CreateTrie(fileInfo, out trie);
                 ListPhonebook(trie.Skip(skip).Take(limit));
             }
             else if (args[1] == "rebuild")
             {
+                stream = CreateTrie(fileInfo, out trie);
                 Rebuild(ref trie, ref stream);
             }
-            trie.Persist();
-            using (stream) {/*dispose*/ }
+
+            if (trie != null) trie.Persist();
+            if (stream != null)
+                using (stream) { /*dispose*/ }
 
             stopwatch.Stop();
             Console.WriteLine($"Elapsed: {stopwatch.Elapsed} ({stopwatch.Elapsed.TotalSeconds:0.0} seconds)");
+        }
+
+        private static FileStream CreateTrie(FileInfo fileInfo, out PersistentTrie trie)
+        {
+            var stream = fileInfo
+                .Open(FileMode.OpenOrCreate);
+            trie = new PersistentTrie(stream);
+            return stream;
         }
 
         private static void Rebuild(ref PersistentTrie trie, ref FileStream stream)
