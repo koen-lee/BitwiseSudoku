@@ -29,8 +29,8 @@ namespace PhoneBook
                     fileInfo.Delete();
                 stream = CreateTrie(fileInfo, out trie);
                 var generateTimer = Stopwatch.StartNew();
-                var count = 100_000;
-                //var count = 10_000_000;
+               // var count = 100_000;
+                var count = 10_000_000;
                 var tick = count / 50;
                 for (int i = 0; i < count; i++)
                 {
