@@ -121,18 +121,19 @@ namespace BitPrefixTrie
             return 0 != (_bits[_startBit / 8] & (0x80 >> (_startBit % 8)));
         }
 
-        public Bits Common(IEnumerable<bool> enumerable)
+        public Bits Common(Bits other)
         {
-            return new Bits(_bits, _startBit, _startBit + CommonCount(enumerable));
+            return new Bits(_bits, _startBit, _startBit + CommonCount(other));
         }
 
-        private int CommonCount(IEnumerable<bool> other)
+        private int CommonCount(Bits other)
         {
+            var maxCount = Math.Min(Count, other.Count);
+            if (maxCount == 0) return 0;
             var commonCount = 0;
-            using var otherbit = other.GetEnumerator();
-            foreach (var mybit in this)
+            for (int i = 0; i < maxCount; i++)
             {
-                if (otherbit.MoveNext() && mybit == otherbit.Current)
+                if (GetBit(i) == other.GetBit(i))
                 {
                     commonCount++;
                 }
@@ -143,6 +144,12 @@ namespace BitPrefixTrie
             }
 
             return commonCount;
+        }
+
+        private bool GetBit(int bit)
+        {
+            if (bit >= Count) throw new InvalidOperationException();
+            return 0 != (_bits[(_startBit + bit) / 8] & (0x80 >> ((_startBit + bit) % 8)));
         }
 
         public Bits Skip(int count)
