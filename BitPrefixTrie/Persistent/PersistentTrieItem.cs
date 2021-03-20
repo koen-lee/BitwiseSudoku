@@ -211,12 +211,7 @@ namespace BitPrefixTrie.Persistent
 
         public void AddItem(Bits newPrefix, byte[] value)
         {
-            var common = newPrefix.Common(Prefix);
-            if (common.Count == newPrefix.Count)
-            {
-                throw new InvalidOperationException("either a duplicate key or we need to mutate ourselves, both should be caught in AddToChild");
-            }
-
+            Debug.Assert(newPrefix.Common(Prefix).Count != newPrefix.Count);
             if (newPrefix.Skip(Prefix.Count).First())
             {
                 AddToChild(ref True, ref TrueCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
