@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace BitPrefixTrie
 {
@@ -146,9 +147,10 @@ namespace BitPrefixTrie
             return commonCount;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool GetBit(int bit)
         {
-            if (bit >= Count) throw new InvalidOperationException();
+            Debug.Assert(bit >= Count);
             return 0 != (_bits[(_startBit + bit) / 8] & (0x80 >> ((_startBit + bit) % 8)));
         }
 
@@ -196,7 +198,7 @@ namespace BitPrefixTrie
                 return true;
             if (ReferenceEquals(_bits, other._bits) && _startBit == other._startBit)
                 return true;
-            return this.SequenceEqual(other);
+            return CommonCount(other) == Count;
         }
 
         public override bool Equals(object obj)
