@@ -127,7 +127,7 @@ namespace BitPrefixTrie
             return new Bits(_bits, _startBit, CommonCount(other));
         }
 
-        private int CommonCount(Bits other)
+        public int CommonCount(Bits other)
         {
             var maxCount = Math.Min(Count, other.Count);
             if (maxCount == 0) return 0;
@@ -148,7 +148,7 @@ namespace BitPrefixTrie
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool GetBit(int bit)
+        public bool GetBit(int bit)
         {
             Debug.Assert(bit >= Count);
             return 0 != (_bits[(_startBit + bit) / 8] & (0x80 >> ((_startBit + bit) % 8)));

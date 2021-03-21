@@ -204,15 +204,13 @@ namespace BitPrefixTrie.Persistent
             ) throw new InvalidOperationException("Writing buffer failed");
             _storage.Seek(_offset, SeekOrigin.Begin);
             _storage.Write(buffer);
-            False?.Invoke().Persist();
-            True?.Invoke().Persist();
             _isDirty = false;
         }
 
         public void AddItem(Bits newPrefix, byte[] value)
         {
             Debug.Assert(newPrefix.Common(Prefix).Count != newPrefix.Count);
-            if (newPrefix.Skip(Prefix.Count).First())
+            if (newPrefix.GetBit(Prefix.Count))
             {
                 AddToChild(ref True, ref TrueCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
@@ -232,8 +230,8 @@ namespace BitPrefixTrie.Persistent
             }
             else
             {
-                var commonBits = theChild.Prefix.Common(bits);
-                if (theChild.Prefix.Count == commonBits.Count)
+                var commonCount = theChild.Prefix.CommonCount(bits);
+                if (theChild.Prefix.Count == commonCount)
                 {
                     if (theChild.Prefix.Count == bits.Count)
                     {
@@ -252,13 +250,13 @@ namespace BitPrefixTrie.Persistent
                 else
                 {
                     //split sub trie along the common prefix
-                    if (commonBits.Count == bits.Count)
+                    if (commonCount == bits.Count)
                     {
-                        child = NewChild(new PersistentTrieItem(_storage, commonBits, value));
+                        child = NewChild(new PersistentTrieItem(_storage, bits, value));
                     }
                     else
                     {
-                        child = NewChild(new PersistentTrieItem(_storage, commonBits));
+                        child = NewChild(new PersistentTrieItem(_storage, bits.Take(commonCount)));
                         child().AddItem(bits, value);
                     }
                     child().MakeGrandchild(theChild);
