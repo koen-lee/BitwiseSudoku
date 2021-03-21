@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BitPrefixTrie\BitPrefixTrie.csproj" />
+    <ProjectReference Include="..\DutchNameGenerator\DutchNameGenerator.csproj" />
   </ItemGroup>
 
 </Project>

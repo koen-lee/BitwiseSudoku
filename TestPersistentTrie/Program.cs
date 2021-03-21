@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using BitPrefixTrie;
 using BitPrefixTrie.Persistent;
+using DutchNameGenerator;
 
 namespace PhoneBook
 {
@@ -12,7 +13,7 @@ namespace PhoneBook
     {
         private static long _number = 12345678901;
         private static int _defragment_threshold = 1_000_000;
-
+        private static Random _random;
         static void Main(string[] args)
         {
             args ??= new string[0];
@@ -27,11 +28,14 @@ namespace PhoneBook
 
             if (args[1] == "generate")
             {
+                var names = new Generator().GenerateUniqueNames();
                 var generateTimer = Stopwatch.StartNew();
                 var count = 100_000;
                 var tick = count / 50;
-                for (int i = 0; i < count; i++)
+                int i = 0;
+                foreach (var name in names.Take(count))
                 {
+                    i++;
                     trie.Add(Guid.NewGuid().ToString(), GeneratePhoneNumber());
                     if ((i + 1) % tick == 0)
                     {
@@ -105,7 +109,7 @@ namespace PhoneBook
 
         public static string GeneratePhoneNumber()
         {
-            return (_number++).ToString();
+            return _random.Next((int)1e10, (int)1e12).ToString();
         }
     }
 }

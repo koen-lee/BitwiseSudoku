@@ -11,6 +11,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BitPrefixTrieTests", "BitPr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhoneBook", "TestPersistentTrie\PhoneBook.csproj", "{29236E41-6DAC-4315-B0F3-079E4C17EC8A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DutchNameGenerator", "DutchNameGenerator\DutchNameGenerator.csproj", "{6D172672-605E-4399-A629-1C15B6C86720}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DutchFamilyNamesTests", "DutchFamilyNamesTests\DutchFamilyNamesTests.csproj", "{067BAC8B-4A2E-47F8-82E7-425641CE45DE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +37,14 @@ Global
 		{29236E41-6DAC-4315-B0F3-079E4C17EC8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29236E41-6DAC-4315-B0F3-079E4C17EC8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29236E41-6DAC-4315-B0F3-079E4C17EC8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D172672-605E-4399-A629-1C15B6C86720}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D172672-605E-4399-A629-1C15B6C86720}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D172672-605E-4399-A629-1C15B6C86720}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D172672-605E-4399-A629-1C15B6C86720}.Release|Any CPU.Build.0 = Release|Any CPU
+		{067BAC8B-4A2E-47F8-82E7-425641CE45DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{067BAC8B-4A2E-47F8-82E7-425641CE45DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{067BAC8B-4A2E-47F8-82E7-425641CE45DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{067BAC8B-4A2E-47F8-82E7-425641CE45DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
