@@ -11,9 +11,8 @@ namespace PhoneBook
 {
     class Program
     {
-        private static long _number = 12345678901;
         private static int _defragment_threshold = 1_000_000;
-        private static Random _random;
+        private static Random _random = new Random();
         static void Main(string[] args)
         {
             args ??= new string[0];
@@ -135,7 +134,8 @@ namespace PhoneBook
 
         public static string GeneratePhoneNumber()
         {
-            return _random.Next((int)1e10, (int)1e12).ToString();
+            return _random.Next((int)1e5, (int)1e7).ToString() +
+                   _random.Next((int)1e5, (int)1e7).ToString();
         }
     }
 }
