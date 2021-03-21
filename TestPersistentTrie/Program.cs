@@ -19,18 +19,20 @@ namespace PhoneBook
             args ??= new string[0];
             if (args.Length == 0)
                 args = new[] { "%HOMEPATH%/phonebook", "list" };
+            var stopwatch = Stopwatch.StartNew();
 
             var fileInfo = new FileInfo(Environment.ExpandEnvironmentVariables(args[0]));
-            var stream = fileInfo
-               .Open(FileMode.OpenOrCreate);
-            var stopwatch = Stopwatch.StartNew();
-            var trie = new PersistentTrie(stream);
-
+            PersistentTrie trie = null;
+            FileStream stream = null;
             if (args[1] == "generate")
             {
                 var names = new Generator().GenerateUniqueNames();
+                if (fileInfo.Exists)
+                    fileInfo.Delete();
+                stream = CreateTrie(fileInfo, out trie);
                 var generateTimer = Stopwatch.StartNew();
-                var count = 100_000;
+               // var count = 100_000;
+                var count = 10_000_000;
                 var tick = count / 50;
                 int i = 0;
                 foreach (var name in names.Take(count))
@@ -47,9 +49,8 @@ namespace PhoneBook
             }
             else if (args[1] == "add")
             {
+                stream = CreateTrie(fileInfo, out trie);
                 trie.Add(args[2], args[3]);
-
-                Defragment(ref trie, ref stream);
             }
             else if (args[1] == "list")
             {
@@ -59,19 +60,33 @@ namespace PhoneBook
                     skip = int.Parse(args[2]);
                 if (args.Length > 3)
                     limit = int.Parse(args[3]);
+                CreateTrie(fileInfo, out trie);
                 ListPhonebook(trie.Skip(skip).Take(limit));
             }
+            else if (args[1] == "rebuild")
+            {
+                stream = CreateTrie(fileInfo, out trie);
+                Rebuild(ref trie, ref stream);
+            }
 
-            trie.Persist();
-            using (stream) {/*dispose*/ }
+            if (trie != null) trie.Persist();
+            if (stream != null)
+                using (stream) { /*dispose*/ }
 
             stopwatch.Stop();
             Console.WriteLine($"Elapsed: {stopwatch.Elapsed} ({stopwatch.Elapsed.TotalSeconds:0.0} seconds)");
         }
 
-        private static void Defragment(ref PersistentTrie trie, ref FileStream stream)
+        private static FileStream CreateTrie(FileInfo fileInfo, out PersistentTrie trie)
         {
-            if (trie.Count % _defragment_threshold != 0) return;
+            var stream = fileInfo
+                .Open(FileMode.OpenOrCreate);
+            trie = new PersistentTrie(stream);
+            return stream;
+        }
+
+        private static void Rebuild(ref PersistentTrie trie, ref FileStream stream)
+        {
             var timer = Stopwatch.StartNew();
             DoRebuildTree(ref trie, ref stream);
             Console.WriteLine($"Defragmenting took {timer.ElapsedMilliseconds} ms");
@@ -82,11 +97,22 @@ namespace PhoneBook
             _defragment_threshold = (int)(_defragment_threshold * 1.41);
             var newFile = new FileInfo(stream.Name + ".new");
             if (newFile.Exists) newFile.Delete();
+
+            var tick = trie.Count / 50;
+            var i = 0;
+            var generateTimer = Stopwatch.StartNew();
             using (var newStream = newFile.Open(FileMode.CreateNew))
             {
                 var newTrie = new PersistentTrie(newStream);
                 foreach (var item in trie._root)
+                {
                     newTrie._root.AddItem(new Bits(item.Key), item.Value);
+                    if (i++ % tick == 0)
+                    {
+                        Console.WriteLine($"[{i,10}] {tick / generateTimer.Elapsed.TotalSeconds:0.0} inserts/sec");
+                        generateTimer.Restart();
+                    }
+                }
                 using (stream)
                 {
                     /*dispose*/

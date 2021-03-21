@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using static System.BitConverter;
 
 namespace BitPrefixTrie.Persistent
 {
@@ -43,8 +44,7 @@ namespace BitPrefixTrie.Persistent
             if (offset == 0 && storage.Length == 0)
             {
                 Prefix = Bits.Empty;
-                MarkDirty();
-                Persist();
+                PersistNewItem();
             }
             else
             {
@@ -68,17 +68,17 @@ namespace BitPrefixTrie.Persistent
                 {
                     throw new InvalidDataException("this is no HasValue flag");
                 }
-                var trueOffset = BitConverter.ToUInt32(data, 1);
-                TrueCount = BitConverter.ToUInt32(data, 5);
-                var falseOffset = BitConverter.ToUInt32(data, 9);
-                FalseCount = BitConverter.ToUInt32(data, 13);
-                var prefixLength = BitConverter.ToUInt16(data, 17);
+                var trueOffset = ToUInt32(data, 1);
+                TrueCount = ToUInt32(data, 5);
+                var falseOffset = ToUInt32(data, 9);
+                FalseCount = ToUInt32(data, 13);
+                var prefixLength = ToUInt16(data, 17);
                 var length = (prefixLength / 8) + (prefixLength % 8 == 0 ? 0 : 1);
                 var prefixBytes = ReadArray(length);
-                Prefix = new Bits(new Bits(prefixBytes).Take(prefixLength));
+                Prefix = new Bits(prefixBytes).Take(prefixLength);
                 if (HasValue)
                 {
-                    var valueLength = BitConverter.ToUInt16(ReadArray(2), 0);
+                    var valueLength = ToUInt16(ReadArray(2), 0);
                     Value = ReadArray(valueLength);
                 }
                 True = GetChildFactory(trueOffset);
@@ -97,8 +97,7 @@ namespace BitPrefixTrie.Persistent
         {
             HasValue = false;
             Prefix = prefix;
-            MarkDirty();
-            Persist();
+            PersistNewItem();
         }
 
         private PersistentTrieItem(Stream storage, Bits prefix, byte[] value)
@@ -107,8 +106,7 @@ namespace BitPrefixTrie.Persistent
             Value = value;
             HasValue = true;
             Prefix = prefix;
-            MarkDirty();
-            Persist();
+            PersistNewItem();
         }
 
         private PersistentTrieItem(Stream storage, Bits prefix, bool hasValue, byte[] value,
@@ -122,8 +120,7 @@ namespace BitPrefixTrie.Persistent
             TrueCount = trueCount;
             False = @false;
             FalseCount = falseCount;
-            MarkDirty();
-            Persist();
+            PersistNewItem();
         }
 
         private Func<PersistentTrieItem> GetChildFactory(uint offset)
@@ -153,7 +150,90 @@ namespace BitPrefixTrie.Persistent
             _isDirty = true;
         }
 
+        private void PersistNewItem()
+        {
+            MarkDirty();
+            Persist();
+            PersistImmutable();
+        }
+
+        /// <summary>
+        /// Persists the immutable and variable-size members: prefix and value.
+        /// </summary>
+        private void PersistImmutable()
+        {
+            List<byte> buffer = new List<byte>(20);
+
+            buffer.AddRange(GetBytes((ushort)Prefix.Count));
+            buffer.AddRange(Prefix.GetPartialBytes().ToArray());
+            if (HasValue)
+            {
+                buffer.AddRange(GetBytes((ushort)Value.Length));
+                buffer.AddRange(Value);
+            }
+            _storage.Seek(_offset + 1 + 8 + 8, SeekOrigin.Begin);
+            _storage.Write(buffer.ToArray());
+
+        }
+
+        /// <summary>
+        /// Persists the mutable parts of the item, which is everything except the prefix and value.
+        /// </summary>
         public void Persist()
+        {
+            var itemsToPersist = new List<KeyValuePair<uint, Action>>(3);
+            itemsToPersist.Add(new KeyValuePair<uint, Action>(_offset, PersistSelf));
+            if (False != null)
+            {
+                var falseItem = False();
+                itemsToPersist.Add(new KeyValuePair<uint, Action>(falseItem._offset, falseItem.Persist));
+            }
+            if (True != null)
+            {
+                var trueItem = True();
+                itemsToPersist.Add(new KeyValuePair<uint, Action>(trueItem._offset, trueItem.Persist));
+            }
+
+            // unrolled sort
+            if (itemsToPersist.Count == 1)
+            {
+                //this must be me
+                PersistSelf();
+            }
+            else if (itemsToPersist.Count == 2)
+            {
+                if (itemsToPersist[0].Key < itemsToPersist[1].Key)
+                {
+                    itemsToPersist[0].Value();
+                    itemsToPersist[1].Value();
+                }
+                else
+                {
+                    itemsToPersist[1].Value();
+                    itemsToPersist[0].Value();
+                }
+            }
+            else // 3 items
+            {
+                void SwapIfGreater(int index1, int index2)
+                {
+                    if (itemsToPersist[index1].Key > itemsToPersist[index2].Key)
+                    {
+                        var temp = itemsToPersist[index1];
+                        itemsToPersist[index1] = itemsToPersist[index2];
+                        itemsToPersist[index2] = temp;
+                    }
+                }
+                SwapIfGreater(0, 1);
+                SwapIfGreater(0, 2);
+                SwapIfGreater(1, 2);
+
+                itemsToPersist[0].Value();
+                itemsToPersist[1].Value();
+                itemsToPersist[2].Value();
+            }
+        }
+        private void PersistSelf()
         {
             if (!_isDirty) return;
             // Stream format:
@@ -167,44 +247,30 @@ namespace BitPrefixTrie.Persistent
             // hasValue? [2:ushort] size of value in bytes
             // hasValue? [size:byte[]] value (utf-8)
 
-            List<byte> buffer = new List<byte>(20);
+            byte[] buffer = new byte[1 + 8 + 8];
 
-            buffer.AddRange(new[] { (byte)(HasValue ? 0xff : 0x00) });
-            buffer.AddRange(BitConverter.GetBytes(True?.Invoke()._offset ?? 0));
-            buffer.AddRange(BitConverter.GetBytes(TrueCount));
-            buffer.AddRange(BitConverter.GetBytes(False?.Invoke()._offset ?? 0));
-            buffer.AddRange(BitConverter.GetBytes(FalseCount));
-            buffer.AddRange(BitConverter.GetBytes((ushort)Prefix.Count));
-            buffer.AddRange(Prefix.GetPartialBytes().ToArray());
-            if (HasValue)
-            {
-                buffer.AddRange(BitConverter.GetBytes((ushort)Value.Length));
-                buffer.AddRange(Value);
-            }
-
+            buffer[0] = (byte)(HasValue ? 0xff : 0x00);
+            if (!
+               (TryWriteBytes(buffer.AsSpan(1), True?.Invoke()._offset ?? 0) &&
+                TryWriteBytes(buffer.AsSpan(5), TrueCount) &&
+                TryWriteBytes(buffer.AsSpan(9), False?.Invoke()._offset ?? 0) &&
+                TryWriteBytes(buffer.AsSpan(13), FalseCount))
+            ) throw new InvalidOperationException("Writing buffer failed");
             _storage.Seek(_offset, SeekOrigin.Begin);
-            _storage.Write(buffer.ToArray());
-            False?.Invoke().Persist();
-            True?.Invoke().Persist();
+            _storage.Write(buffer);
             _isDirty = false;
         }
 
-
         public void AddItem(Bits newPrefix, byte[] value)
         {
-            var common = newPrefix.Common(Prefix);
-            if (common.Count == newPrefix.Count)
+            Debug.Assert(newPrefix.Common(Prefix).Count != newPrefix.Count);
+            if (newPrefix.GetBit(Prefix.Count))
             {
-                throw new InvalidOperationException("either a duplicate key or we need to mutate ourselves, both should be caught in AddToChild");
-            }
-
-            if (newPrefix.Skip(Prefix.Count).First())
-            {
-                AddToChild(ref True, ref TrueCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
+                AddToChild(ref True, ref TrueCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
             else
             {
-                AddToChild(ref False, ref FalseCount, new Bits(newPrefix.Skip(Prefix.Count + 1)), value);
+                AddToChild(ref False, ref FalseCount, newPrefix.Skip(Prefix.Count + 1), value);
             }
         }
 
@@ -218,8 +284,8 @@ namespace BitPrefixTrie.Persistent
             }
             else
             {
-                var commonBits = theChild.Prefix.Common(bits);
-                if (theChild.Prefix.Count == commonBits.Count)
+                var commonCount = theChild.Prefix.CommonCount(bits);
+                if (theChild.Prefix.Count == commonCount)
                 {
                     if (theChild.Prefix.Count == bits.Count)
                     {
@@ -238,13 +304,13 @@ namespace BitPrefixTrie.Persistent
                 else
                 {
                     //split sub trie along the common prefix
-                    if (commonBits.Count == bits.Count)
+                    if (commonCount == bits.Count)
                     {
-                        child = NewChild(new PersistentTrieItem(_storage, commonBits, value));
+                        child = NewChild(new PersistentTrieItem(_storage, bits, value));
                     }
                     else
                     {
-                        child = NewChild(new PersistentTrieItem(_storage, commonBits));
+                        child = NewChild(new PersistentTrieItem(_storage, bits.Take(commonCount)));
                         child().AddItem(bits, value);
                     }
                     child().MakeGrandchild(theChild);
@@ -264,7 +330,7 @@ namespace BitPrefixTrie.Persistent
         {
             var discriminator = oldChild.Prefix.Skip(Prefix.Count).First();
             var grandchild = NewChild(new PersistentTrieItem(_storage,
-                new Bits(oldChild.Prefix.Skip(Prefix.Count + 1)),
+                oldChild.Prefix.Skip(Prefix.Count + 1),
                 oldChild.HasValue,
                 oldChild.Value,
                 oldChild.True,
@@ -346,11 +412,11 @@ namespace BitPrefixTrie.Persistent
                 return bits.Equals(Prefix) ? this : null;
             if (bits.Skip(Prefix.Count).First())
             {
-                return True?.Invoke().Find(new Bits(bits.Skip(Prefix.Count + 1)));
+                return True?.Invoke().Find(bits.Skip(Prefix.Count + 1));
             }
             else
             {
-                return False?.Invoke().Find(new Bits(bits.Skip(Prefix.Count + 1)));
+                return False?.Invoke().Find(bits.Skip(Prefix.Count + 1));
             }
         }
 
@@ -369,7 +435,7 @@ namespace BitPrefixTrie.Persistent
             }
             if (bits.Skip(Prefix.Count).First())
             {
-                if (True == null || !True().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
+                if (True == null || !True().Remove(bits.Skip(Prefix.Count + 1)))
                     return false;
                 TrueCount--;
                 MarkDirty();
@@ -377,7 +443,7 @@ namespace BitPrefixTrie.Persistent
             }
             else
             {
-                if (False == null || !False().Remove(new Bits(bits.Skip(Prefix.Count + 1))))
+                if (False == null || !False().Remove(bits.Skip(Prefix.Count + 1)))
                     return false;
                 FalseCount--;
                 MarkDirty();

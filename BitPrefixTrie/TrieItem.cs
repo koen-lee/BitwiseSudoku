@@ -98,7 +98,7 @@ namespace BitPrefixTrie
         private void MakeGrandchild(TrieItem<T> oldChild)
         {
             var discriminator = oldChild.Prefix.Skip(Prefix.Count).First();
-            var grandchild = new TrieItem<T>(new Bits(oldChild.Prefix.Skip(Prefix.Count + 1)), oldChild.HasValue, oldChild.Value, oldChild.True, oldChild.False);
+            var grandchild = new TrieItem<T>(oldChild.Prefix.Skip(Prefix.Count + 1), oldChild.HasValue, oldChild.Value, oldChild.True, oldChild.False);
             if (discriminator)
             {
                 if (True != null) throw new InvalidOperationException("Child 1 already set");
@@ -152,11 +152,11 @@ namespace BitPrefixTrie
                 return bits.Equals(Prefix) ? this : null;
             if (bits.Skip(Prefix.Count).First())
             {
-                return True?.Find(new Bits(bits.Skip(Prefix.Count + 1)));
+                return True?.Find(bits.Skip(Prefix.Count + 1));
             }
             else
             {
-                return False?.Find(new Bits(bits.Skip(Prefix.Count + 1)));
+                return False?.Find(bits.Skip(Prefix.Count + 1));
             }
         }
     }

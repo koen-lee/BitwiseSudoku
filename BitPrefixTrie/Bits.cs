@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace BitPrefixTrie
 {
@@ -12,25 +13,25 @@ namespace BitPrefixTrie
         public static readonly Bits Empty = new Bits(new byte[0]);
         private readonly byte[] _bits;
         private readonly int _startBit;
-        private readonly int _stopBit;
-        public int Count => _stopBit - _startBit;
+        public readonly int Count;
 
         public Bits(byte[] bits)
         {
             _bits = bits ?? throw new ArgumentNullException(nameof(bits));
             _startBit = 0;
-            _stopBit = _bits.Length * 8;
+            Count = _bits.Length * 8;
         }
 
-        public Bits(Bits bits) : this(bits._bits, bits._startBit, bits._stopBit)
+        [Obsolete]
+        public Bits(Bits bits) : this(bits._bits, bits._startBit, bits.Count)
         { }
 
-        public Bits(byte[] bits, int startBit, int stopBit)
+        public Bits(byte[] bits, int startBit, int count)
         {
-            if (stopBit < startBit)
-                throw new ArgumentException();
-            _bits = bits ?? throw new ArgumentNullException(nameof(bits));
-            _stopBit = stopBit;
+            Debug.Assert(count > 0);
+            Debug.Assert(bits != null);
+            _bits = bits;
+            Count = count;
             _startBit = startBit;
         }
 
@@ -39,7 +40,7 @@ namespace BitPrefixTrie
             byte partialByte = 0;
             var partialCount = 0;
             _startBit = 0;
-            _stopBit = 0;
+            Count = 0;
             var fullBytes = new List<byte>();
 
             foreach (var bit in bits)
@@ -47,7 +48,7 @@ namespace BitPrefixTrie
                 if (bit)
                     partialByte |= (byte)(0x80 >> partialCount);
                 partialCount++;
-                _stopBit++;
+                Count++;
                 if (partialCount == 8)
                 {
                     fullBytes.Add(partialByte);
@@ -64,24 +65,24 @@ namespace BitPrefixTrie
         /// returns a byte array iff the bits form complete bytes (Count is divisible by 8), throws InvalidOperationException otherwise.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<byte> AsBytes()
+        public byte[] AsBytes()
         {
             if (Count % 8 != 0) throw new InvalidOperationException();
-            return GetPartialBytes();
+            return GetPartialBytes().ToArray();
         }
 
         /// <summary>
         /// returns a byte array where the last byte may be partial.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<byte> GetPartialBytes()
+        public ReadOnlySpan<byte> GetPartialBytes()
         {
             var offset = _startBit % 8;
             var byteCount = Count / 8 + (Count % 8 == 0 ? 0 : 1);
             var byteStart = _startBit / 8;
             if (offset == 0)
             {
-                return _bits.Skip(byteStart).Take(byteCount);
+                return _bits.AsSpan(byteStart, byteCount);
             }
 
             if (_bits.Length == 1)
@@ -103,41 +104,37 @@ namespace BitPrefixTrie
             var firstIndex = _startBit / 8;
             var firstBit = _startBit % 8;
             var count = Count;
-            foreach (var b in _bits.Skip(firstIndex))
+            for (var index = firstIndex; index < _bits.Length; index++)
             {
-                foreach (var bit in GetBits(b, firstBit))
+                var b = _bits[index];
+                for (int i = firstBit; i < 8; i++)
                 {
-                    yield return bit;
+                    yield return (b & (0x80 >> i)) != 0;
                     if (--count == 0) yield break;
                 }
                 firstBit = 0;
             }
         }
-        
+
         public bool First()
         {
             if (Count == 0) throw new InvalidOperationException();
             return 0 != (_bits[_startBit / 8] & (0x80 >> (_startBit % 8)));
         }
 
-        private IEnumerable<bool> GetBits(byte b, int start)
+        public Bits Common(Bits other)
         {
-            for (int i = start; i < 8; i++)
-                yield return (b & (0x80 >> i)) != 0;
+            return new Bits(_bits, _startBit, CommonCount(other));
         }
 
-        public Bits Common(IEnumerable<bool> enumerable)
+        public int CommonCount(Bits other)
         {
-            return new Bits(_bits, _startBit, _startBit + CommonCount(enumerable));
-        }
-
-        private int CommonCount(IEnumerable<bool> other)
-        {
+            var maxCount = Math.Min(Count, other.Count);
+            if (maxCount == 0) return 0;
             var commonCount = 0;
-            using var otherbit = other.GetEnumerator();
-            foreach (var mybit in this)
+            for (int i = 0; i < maxCount; i++)
             {
-                if (otherbit.MoveNext() && mybit == otherbit.Current)
+                if (GetBit(i) == other.GetBit(i))
                 {
                     commonCount++;
                 }
@@ -150,6 +147,13 @@ namespace BitPrefixTrie
             return commonCount;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool GetBit(int bit)
+        {
+            Debug.Assert(bit >= Count);
+            return 0 != (_bits[(_startBit + bit) / 8] & (0x80 >> ((_startBit + bit) % 8)));
+        }
+
         public Bits Skip(int count)
         {
             if (count >= Count)
@@ -160,7 +164,7 @@ namespace BitPrefixTrie
             {
                 return this;
             }
-            return new Bits(_bits, _startBit + count, _stopBit);
+            return new Bits(_bits, _startBit + count, Count - count);
         }
 
         public Bits Take(int count)
@@ -173,7 +177,7 @@ namespace BitPrefixTrie
             {
                 return Empty;
             }
-            return new Bits(_bits, _startBit, _startBit + count);
+            return new Bits(_bits, _startBit, count);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -194,7 +198,7 @@ namespace BitPrefixTrie
                 return true;
             if (ReferenceEquals(_bits, other._bits) && _startBit == other._startBit)
                 return true;
-            return this.SequenceEqual(other);
+            return CommonCount(other) == Count;
         }
 
         public override bool Equals(object obj)
@@ -204,7 +208,7 @@ namespace BitPrefixTrie
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(_startBit, _stopBit, _bits);
+            return HashCode.Combine(_startBit, Count, _bits);
         }
     }
 }
