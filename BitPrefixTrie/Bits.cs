@@ -29,7 +29,7 @@ namespace BitPrefixTrie
         public Bits(byte[] bits, int startBit, int count)
         {
             Debug.Assert(count > 0);
-            Debug.Assert(_bits != null);
+            Debug.Assert(bits != null);
             _bits = bits;
             Count = count;
             _startBit = startBit;

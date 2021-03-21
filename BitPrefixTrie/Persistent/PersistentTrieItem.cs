@@ -181,6 +181,60 @@ namespace BitPrefixTrie.Persistent
         /// </summary>
         public void Persist()
         {
+            var itemsToPersist = new List<KeyValuePair<uint, Action>>(3);
+            itemsToPersist.Add(new KeyValuePair<uint, Action>(_offset, PersistSelf));
+            if (False != null)
+            {
+                var falseItem = False();
+                itemsToPersist.Add(new KeyValuePair<uint, Action>(falseItem._offset, falseItem.Persist));
+            }
+            if (True != null)
+            {
+                var trueItem = True();
+                itemsToPersist.Add(new KeyValuePair<uint, Action>(trueItem._offset, trueItem.Persist));
+            }
+
+            // unrolled sort
+            if (itemsToPersist.Count == 1)
+            {
+                //this must be me
+                PersistSelf();
+            }
+            else if (itemsToPersist.Count == 2)
+            {
+                if (itemsToPersist[0].Key < itemsToPersist[1].Key)
+                {
+                    itemsToPersist[0].Value();
+                    itemsToPersist[1].Value();
+                }
+                else
+                {
+                    itemsToPersist[1].Value();
+                    itemsToPersist[0].Value();
+                }
+            }
+            else // 3 items
+            {
+                void SwapIfGreater(int index1, int index2)
+                {
+                    if (itemsToPersist[index1].Key > itemsToPersist[index2].Key)
+                    {
+                        var temp = itemsToPersist[index1];
+                        itemsToPersist[index1] = itemsToPersist[index2];
+                        itemsToPersist[index2] = temp;
+                    }
+                }
+                SwapIfGreater(0, 1);
+                SwapIfGreater(0, 2);
+                SwapIfGreater(1, 2);
+
+                itemsToPersist[0].Value();
+                itemsToPersist[1].Value();
+                itemsToPersist[2].Value();
+            }
+        }
+        private void PersistSelf()
+        {
             if (!_isDirty) return;
             // Stream format:
             // [1:byte] hasValue flag
