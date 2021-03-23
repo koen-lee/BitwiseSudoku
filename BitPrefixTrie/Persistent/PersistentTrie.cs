@@ -159,5 +159,13 @@ namespace BitPrefixTrie.Persistent
         {
             _root.Persist();
         }
+
+        public IEnumerable<KeyValuePair<string, string>> From(string key)
+        {
+            foreach (var item in _root.From(GetBits(key)))
+            {
+                yield return MakeStringPair(item);
+            }
+        }
     }
 }

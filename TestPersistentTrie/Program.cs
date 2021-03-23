@@ -70,6 +70,17 @@ namespace PhoneBook
                 stream = CreateTrie(fileInfo, out trie);
                 Rebuild(ref trie, ref stream);
             }
+            else if (args[1] == "listfrom")
+            {
+                var from = "";
+                var limit = 100;
+                if (args.Length > 2)
+                    from = args[2];
+                if (args.Length > 3)
+                    limit = int.Parse(args[3]);
+                CreateTrie(fileInfo, out trie);
+                ListPhonebook(trie.From(from).Take(limit));
+            }
 
             if (stream != null)
                 using (stream) { /*dispose*/ }
