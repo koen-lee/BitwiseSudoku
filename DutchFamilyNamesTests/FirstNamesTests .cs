@@ -30,11 +30,14 @@ namespace DutchFamilyNamesTests
         [Fact]
         public void SerializeNames()
         {
-            var root = new FamilyNames.Root() {FamilyNames = new[]
+            var root = new FamilyNames.Root()
+            {
+                FamilyNames = new[]
             {
                 new FamilyNames.Root.FamilyName{naam = "Leeuwen", prefix = "van"},
                 new FamilyNames.Root.FamilyName{naam = "Bogaert", prefix = "van den"}
-            }};
+            }
+            };
 
             var serializer = new XmlSerializer(typeof(FamilyNames.Root));
             StringWriter writer = new StringWriter();

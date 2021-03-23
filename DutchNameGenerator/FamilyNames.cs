@@ -18,7 +18,7 @@ namespace DutchNameGenerator
                 if (n.prefix == string.Empty)
                     return n.naam;
                 return n.prefix + " " + n.naam;
-            });
+            }).Distinct();
         }
 
         [XmlType("root")]

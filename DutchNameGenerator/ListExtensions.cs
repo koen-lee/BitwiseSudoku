@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DutchNameGenerator
 {
     public static class ListExtensions
     {
-        static Random _random = new Random();
+        static readonly Random _random = new Random();
 
         public static void Shuffle<T>(this IList<T> list)
         {
@@ -18,28 +19,28 @@ namespace DutchNameGenerator
             }
         }
 
-        public static IEnumerable<IEnumerable<T>> ChopToPieces<T>(this IEnumerable<T> items, int pieceSize)
+        public static IEnumerable<T[]> ChopToPieces<T>(this IEnumerable<T> items, int pieceSize)
         {
-            var enumerator = items.GetEnumerator();
+            using var enumerator = items.GetEnumerator();
             bool done = false;
+            if (!enumerator.MoveNext()) yield break;
 
             IEnumerable<T> GetPiece()
             {
                 for (int i = 0; i < pieceSize; i++)
                 {
+                    yield return enumerator.Current;
                     if (!enumerator.MoveNext())
                     {
                         done = true;
                         yield break;
                     }
-
-                    yield return enumerator.Current;
                 }
             }
 
             while (!done)
             {
-                yield return GetPiece();
+                yield return GetPiece().ToArray();
             }
         }
     }
