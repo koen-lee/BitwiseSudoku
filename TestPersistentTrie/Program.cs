@@ -21,7 +21,7 @@ namespace PhoneBook
             var stopwatch = Stopwatch.StartNew();
 
             var fileInfo = new FileInfo(Environment.ExpandEnvironmentVariables(args[0]));
-            PersistentTrie trie = null;
+            PersistentTrie trie;
             FileStream stream = null;
             if (args[1] == "generate")
             {
@@ -37,19 +37,22 @@ namespace PhoneBook
                 foreach (var name in names.Take(count))
                 {
                     i++;
-                    trie.Add(Guid.NewGuid().ToString(), GeneratePhoneNumber());
+                    trie.Add(name, GeneratePhoneNumber());
                     if ((i + 1) % tick == 0)
                     {
                         Console.WriteLine($"[{i,10}] {tick / generateTimer.Elapsed.TotalSeconds:0.0} inserts/sec");
                         generateTimer.Restart();
                     }
                 }
-                Console.WriteLine();
+                trie.Persist();
+
             }
             else if (args[1] == "add")
             {
                 stream = CreateTrie(fileInfo, out trie);
                 trie.Add(args[2], args[3]);
+
+                trie.Persist();
             }
             else if (args[1] == "list")
             {
@@ -68,7 +71,6 @@ namespace PhoneBook
                 Rebuild(ref trie, ref stream);
             }
 
-            if (trie != null) trie.Persist();
             if (stream != null)
                 using (stream) { /*dispose*/ }
 

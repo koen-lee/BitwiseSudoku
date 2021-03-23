@@ -28,12 +28,13 @@ namespace BitPrefixTrie
 
         public Bits(byte[] bits, int startBit, int count)
         {
-            Debug.Assert(count > 0);
             Debug.Assert(bits != null);
             _bits = bits;
             Count = count;
             _startBit = startBit;
         }
+
+        public Bits(params bool[] bits) : this(bits.AsEnumerable()) { }
 
         public Bits(IEnumerable<bool> bits)
         {
@@ -150,7 +151,7 @@ namespace BitPrefixTrie
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool GetBit(int bit)
         {
-            Debug.Assert(bit >= Count);
+            Debug.Assert(bit < Count);
             return 0 != (_bits[(_startBit + bit) / 8] & (0x80 >> ((_startBit + bit) % 8)));
         }
 
@@ -209,6 +210,27 @@ namespace BitPrefixTrie
         public override int GetHashCode()
         {
             return HashCode.Combine(_startBit, Count, _bits);
+        }
+
+        /// <summary>
+        /// String-like comparison, Alpha &lt; B &lt; Beta.
+        /// MSB-first.
+        /// 001 &lt; 1 &lt; 110.
+        /// </summary>
+        /// <returns></returns>
+        public static bool operator <(Bits left, Bits right)
+        {
+            var commonCount = left.CommonCount(right);
+            if (commonCount == left.Count)
+                return !left.Equals(right);
+            if (commonCount == right.Count)
+                return false;
+            return !left.GetBit(commonCount);
+        }
+
+        public static bool operator >(Bits left, Bits right)
+        {
+            return right < left;
         }
     }
 }
