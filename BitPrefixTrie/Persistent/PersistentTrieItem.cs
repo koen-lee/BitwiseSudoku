@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using static System.BitConverter;
+using KVP = System.Collections.Generic.KeyValuePair<System.Collections.Generic.IEnumerable<bool>, byte[]>;
 
 namespace BitPrefixTrie.Persistent
 {
@@ -21,7 +22,7 @@ namespace BitPrefixTrie.Persistent
     /// hasValue? [byte[size]] value (utf-8)
     /// </summary>
     [DebuggerDisplay("{Prefix} {System.Text.Encoding.UTF8.GetString(Value)}")]
-    public class PersistentTrieItem : IEnumerable<KeyValuePair<IEnumerable<bool>, byte[]>>
+    public class PersistentTrieItem : IEnumerable<KVP>
     {
         private readonly Stream _storage;
         private readonly uint _offset;
@@ -35,6 +36,7 @@ namespace BitPrefixTrie.Persistent
         public readonly byte[] Value;
         public bool HasValue;
         private bool _isDirty;
+        private static readonly IEnumerable<KVP> EmptyResult = Enumerable.Empty<KVP>();
         public long Count => FalseCount + TrueCount + (HasValue ? 1 : 0);
 
         public PersistentTrieItem(Stream storage, uint offset)
@@ -350,37 +352,37 @@ namespace BitPrefixTrie.Persistent
             MarkDirty();
         }
 
-        public IEnumerator<KeyValuePair<IEnumerable<bool>, byte[]>> GetEnumerator()
+        public IEnumerator<KVP> GetEnumerator()
         {
             if (HasValue)
-                yield return new KeyValuePair<IEnumerable<bool>, byte[]>(Prefix, Value);
+                yield return new KVP(Prefix, Value);
             if (False != null)
                 foreach (var item in False())
-                    yield return new KeyValuePair<IEnumerable<bool>, byte[]>(Prefix.Append(false).Concat(item.Key), item.Value);
+                    yield return new KVP(Prefix.Append(false).Concat(item.Key), item.Value);
             if (True != null)
                 foreach (var item in True())
-                    yield return new KeyValuePair<IEnumerable<bool>, byte[]>(Prefix.Append(true).Concat(item.Key), item.Value);
+                    yield return new KVP(Prefix.Append(true).Concat(item.Key), item.Value);
         }
 
-        public IEnumerable<KeyValuePair<IEnumerable<bool>, byte[]>> Skip(int count)
+        public IEnumerable<KVP> Skip(int count)
         {
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
             if (count == 0 && HasValue)
-                yield return new KeyValuePair<IEnumerable<bool>, byte[]>(Prefix, Value);
+                yield return new KVP(Prefix, Value);
             var leftToSkip = count;
             if (FalseCount > count)
             {
-                foreach (var item in False().Skip(count))
-                    yield return new KeyValuePair<IEnumerable<bool>, byte[]>(Prefix.Append(false).Concat(item.Key), item.Value);
+                foreach (KVP item in EnumerateFalse(x => x.Skip(count)))
+                    yield return item;
                 leftToSkip = 0;
             }
             else
             {
                 leftToSkip -= (int)FalseCount;
             }
-            if (True != null)
-                foreach (var item in True().Skip(leftToSkip))
-                    yield return new KeyValuePair<IEnumerable<bool>, byte[]>(Prefix.Append(true).Concat(item.Key), item.Value);
+
+            foreach (KVP item in EnumerateTrue(x => x.Skip(leftToSkip)))
+                yield return item;
         }
 
         public IEnumerable<string> GetDescription()
@@ -448,6 +450,51 @@ namespace BitPrefixTrie.Persistent
                 FalseCount--;
                 MarkDirty();
                 return true;
+            }
+        }
+
+        public IEnumerable<KVP> From(Bits key)
+        {
+            if (key.Equals(Prefix) || key < Prefix)
+            {
+                foreach (var item in this)
+                    yield return item;
+                yield break;
+            }
+
+            var commonCount = Prefix.CommonCount(key);
+            if (commonCount != Prefix.Count)
+                yield break;
+
+            var discriminator = key.GetBit(Prefix.Count);
+            if (!discriminator)
+            {
+                foreach (KVP item in EnumerateFalse(x => x.From(key.Skip(Prefix.Count + 1))))
+                    yield return item;
+                foreach (KVP item in EnumerateTrue(x => x))
+                    yield return item;
+            }
+            else
+            {
+                foreach (KVP item in EnumerateTrue(x => x.From(key.Skip(Prefix.Count + 1))))
+                    yield return item;
+            }
+        }
+
+        private IEnumerable<KVP> EnumerateTrue(Func<PersistentTrieItem, IEnumerable<KVP>> selector)
+        {
+            if (True == null) yield break;
+            foreach (var item in selector(True()))
+            {
+                yield return new KVP(Prefix.Append(true).Concat(item.Key), item.Value);
+            }
+        }
+        private IEnumerable<KVP> EnumerateFalse(Func<PersistentTrieItem, IEnumerable<KVP>> selector)
+        {
+            if (False == null) yield break;
+            foreach (var item in selector(False()))
+            {
+                yield return new KVP(Prefix.Append(false).Concat(item.Key), item.Value);
             }
         }
     }
