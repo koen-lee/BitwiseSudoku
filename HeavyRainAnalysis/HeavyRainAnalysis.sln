@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31424.327
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeavyRainAnalysis", "HeavyRainAnalysis.csproj", "{45D29870-F4FF-46A2-97BD-EA1F6F3DBD1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeavyRainAnalysisTests", "HeavyRainAnalysisTests\HeavyRainAnalysisTests.csproj", "{AC7BCD86-5228-48CA-9579-9FCA9110C8DC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{45D29870-F4FF-46A2-97BD-EA1F6F3DBD1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45D29870-F4FF-46A2-97BD-EA1F6F3DBD1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45D29870-F4FF-46A2-97BD-EA1F6F3DBD1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45D29870-F4FF-46A2-97BD-EA1F6F3DBD1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC7BCD86-5228-48CA-9579-9FCA9110C8DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC7BCD86-5228-48CA-9579-9FCA9110C8DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC7BCD86-5228-48CA-9579-9FCA9110C8DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC7BCD86-5228-48CA-9579-9FCA9110C8DC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0C2161BC-63D7-48B9-964D-CB872DF0A21D}
+	EndGlobalSection
+EndGlobal
