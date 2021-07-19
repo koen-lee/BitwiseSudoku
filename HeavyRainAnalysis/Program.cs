@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -14,13 +15,17 @@ namespace HeavyRainAnalysis
 
     public static class Program
     {
-        public static void Main(string filename = @"C:\Users\koen.lee\Documents\Arduino\wakeuplight\BitwiseSudoku\HeavyRainAnalysis\kis_tor_200304.gz")
+        public static void Main(
+            string filename =
+                @"C:\Users\koen.lee\Documents\Arduino\wakeuplight\BitwiseSudoku\HeavyRainAnalysis\kis_tor_200304.gz",
+            bool summary = false)
         {
+            var stopwatch = Stopwatch.StartNew();
             using (var stream = new GZipStream(new FileStream(filename, FileMode.Open), CompressionMode.Decompress))
             {
                 var parser = new Parser();
                 var maxPerStationForFile = from rainData in parser.Parse(stream)
-                                           group rainData by (rainData.Id, rainData.Timestamp.Date)
+                                           group rainData by (rainData.Id, new DateTime(rainData.Timestamp.Year, rainData.Timestamp.Month, 1))
                     into rainByStation
                                            select Aggregate(rainByStation);
                 foreach (var rainData in maxPerStationForFile)
@@ -29,6 +34,8 @@ namespace HeavyRainAnalysis
 
                 }
             }
+            if (summary)
+                Console.WriteLine(stopwatch.Elapsed.TotalSeconds);
         }
 
         private static RainData Aggregate(IGrouping<(string Id, DateTime Date), RainData> rainByStation)
